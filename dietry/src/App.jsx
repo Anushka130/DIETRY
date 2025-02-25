@@ -44,14 +44,13 @@ function AppRoutes({ loggedUser }) {
 
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+      <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
       <Route
         path="/track"
         element={hasDetails ? <Private Component={Track} /> : <Navigate to="/details" />}
       />
       <Route path="/details" element={<UserDetails />} />
-      <Route path="/home" element={<Home />} />
       <Route path="/login" element={<Login />} />
     </Routes>
   );

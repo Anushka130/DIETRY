@@ -25,7 +25,7 @@ export default function Register() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    fetch("http://127.0.0.1:3000/register", {
+    fetch("http://localhost:5000/register", {
       method: "POST",
       body: JSON.stringify(userDetails),
       headers: {
@@ -43,7 +43,7 @@ export default function Register() {
         });
         // Redirect to login page after successful registration
         setTimeout(() => {
-          navigate('/login');
+          navigate('/details');
         }, 2000);
       })
       .catch(error => {

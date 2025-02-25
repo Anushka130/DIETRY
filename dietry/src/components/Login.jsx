@@ -12,13 +12,11 @@ export default function Login() {
   useEffect(() => {
     const storedUser = JSON.parse(sessionStorage.getItem("diet-user"));
     if (storedUser && storedUser.token) {
-      if (storedUser.hasDetails) {
-        navigate('/home'); // Redirect to home if details exist
-      } else {
-        navigate('/details'); // Redirect to details if first-time login
+      if(storedUser?.token){
+        navigate('/login'); //Redirect logged in user to track 
       }
     }
-  }, [navigate]);
+  }, []);
 
   function handleInput(event) {
     setUserCred(prevState => ({ ...prevState, [event.target.name]: event.target.value }));
@@ -27,7 +25,7 @@ export default function Login() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    fetch("http://127.0.0.1:3000/login", {
+    fetch("http://localhost:5000/login", {
       method: "POST",
       body: JSON.stringify(userCred),
       headers: { 'Content-Type': 'application/json' },
@@ -48,9 +46,9 @@ export default function Login() {
           setLoggedUser({ ...data, hasDetails });
 
           if (hasDetails) {
-            navigate('/home'); // Go to home if details exist
+            navigate('/track'); // Go to home if details exist
           } else {
-            navigate('/details'); // Go to details only first time
+            navigate('/home'); // Go to details only first time
           }
         } else {
           setMessage({ type: "error", text: data.message });

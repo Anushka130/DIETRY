@@ -9,14 +9,14 @@ export default function Track()
         const loggedData = useContext(UserContext)
         function searchFood()
         {
-            fetch('http://127.0.0.1:3000/foods/${event.target.value}',
+            fetch('http://localhost:3000/foods/${event.target.value}`, {.....}'),
             { 
                 method: "GET",
                 headers:
                 {
                     "Authorization": "Bearer"+ loggedData.loggedUser.token
                 }
-            })
+            }
               .then((response)=>response.json())
               .then((data)=>{
                   console.log(data);

@@ -28,7 +28,7 @@ export default function UserDetails() {
         event.preventDefault();
         const token = JSON.parse(sessionStorage.getItem("diet-user")).token;
 
-        fetch("http://127.0.0.1:3000/user-details", {
+        fetch("http://127.0.0.1:5000/user-details", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ export default function UserDetails() {
             setLoggedUser(storedUser);
 
             setTimeout(() => {
-                navigate('/home');
+                navigate('/login');
             }, 2000);
         })
         .catch(error => {
