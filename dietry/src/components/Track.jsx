@@ -7,9 +7,9 @@ export default function Track()
     {
 
         const loggedData = useContext(UserContext)
-        function searchFood(event)
+        function searchFood()
         {
-            fetch('http://localhost:3000/foods/${event.target.value}',
+            fetch('http://127.0.0.1:3000/foods/${event.target.value}',
             { 
                 method: "GET",
                 headers:
