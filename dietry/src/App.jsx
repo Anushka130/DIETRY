@@ -1,6 +1,12 @@
 /* eslint-disable react/prop-types */
 import "./App.css";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import Register from "./components/Register";
 import Login from "./components/Login";
 import Track from "./components/Track";
@@ -8,7 +14,10 @@ import { useState, useEffect } from "react";
 import Private from "./components/Private";
 import { UserContext } from "./contexts/UserContext";
 import UserDetails from "./components/UserDetails";
+import AllergySelection from "./components/AllergySelection"; // Import allergy page
 import Home from "./components/Home";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(
@@ -18,6 +27,19 @@ function App() {
   return (
     <UserContext.Provider value={{ loggedUser, setLoggedUser }}>
       <BrowserRouter>
+        {/* Improved Toast Notification Settings */}
+        <ToastContainer
+          position="top-center"
+          autoClose={1000} // 1 second
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss={false}
+          draggable
+          pauseOnHover={false}
+          theme="colored"
+        />
         <AppRoutes loggedUser={loggedUser} setLoggedUser={setLoggedUser} />
       </BrowserRouter>
     </UserContext.Provider>
@@ -36,21 +58,39 @@ function AppRoutes({ loggedUser }) {
     loggedUser.activityLevel &&
     loggedUser.goal;
 
+  const hasAllergyInfo = loggedUser && loggedUser.hasAllergyInfo;
+
   useEffect(() => {
-    if (loggedUser && !hasDetails && location.pathname !== "/details") {
-      window.location.href = "/details";
+    if (loggedUser) {
+      if (!hasDetails && location.pathname !== "/details") {
+        window.location.href = "/details";
+      } else if (
+        hasDetails &&
+        !hasAllergyInfo &&
+        location.pathname !== "/allergy-selection"
+      ) {
+        window.location.href = "/allergy-selection";
+      }
     }
-  }, [loggedUser, hasDetails, location.pathname]);
+  }, [loggedUser, hasDetails, hasAllergyInfo, location.pathname]);
 
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+      <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
       <Route
-        path="/track"
-        element={hasDetails ? <Private Component={Track} /> : <Navigate to="/details" />}
+        path="/home"
+        element={
+          hasDetails ? (
+            <Private Component={Track} />
+          ) : (
+            <Navigate to="/details" />
+          )
+        }
       />
+      <Route path="/track" element={<Track />} />
       <Route path="/details" element={<UserDetails />} />
+      <Route path="/allergy-selection" element={<AllergySelection />} />
       <Route path="/home" element={<Home />} />
       <Route path="/login" element={<Login />} />
     </Routes>

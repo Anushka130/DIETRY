@@ -1,24 +1,22 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Register() {
   const [userDetails, setUserDetails] = useState({
-    name: '',
-    email: '',
-    password: '',
-    age: ''
-  });
-  const [message, setMessage] = useState({
-    type: "invisible",
-    text: ""
+    name: "",
+    email: "",
+    password: "",
+    age: "",
   });
 
   const navigate = useNavigate();
 
   function handleInput(event) {
-    setUserDetails(prevState => ({
+    setUserDetails((prevState) => ({
       ...prevState,
-      [event.target.name]: event.target.value
+      [event.target.name]: event.target.value,
     }));
   }
 
@@ -29,26 +27,27 @@ export default function Register() {
       method: "POST",
       body: JSON.stringify(userDetails),
       headers: {
-        'Content-Type': 'application/json'
-      }
+        "Content-Type": "application/json",
+      },
     })
-      .then(response => response.json())
-      .then(data => {
-        setMessage({ type: "success", text: data.message });
+      .then((response) => response.json())
+      .then((data) => {
+        toast.success(data.message); // Show success toast
         setUserDetails({
-          name: '',
-          email: '',
-          password: '',
-          age: ''
+          name: "",
+          email: "",
+          password: "",
+          age: "",
         });
+
         // Redirect to login page after successful registration
         setTimeout(() => {
-          navigate('/login');
+          navigate("/login");
         }, 2000);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error(error);
-        setMessage({ type: "error", text: "Registration failed" });
+        toast.error("Registration failed"); // Show error toast
       });
   }
 
@@ -95,9 +94,8 @@ export default function Register() {
         />
         <button className="btn">Register</button>
         <p>
-          Already have an account? <Link to='/login'>Login</Link>
+          Already have an account? <Link to="/login">Login</Link>
         </p>
-        <p className={message.type}>{message.text}</p>
       </form>
     </section>
   );
