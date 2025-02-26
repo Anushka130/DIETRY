@@ -84,7 +84,7 @@ function AppRoutes({ loggedUser }) {
           hasDetails ? (
             <Private Component={Track} />
           ) : (
-            <Navigate to="/details" />
+            <Navigate to="/home" />
           )
         }
       />

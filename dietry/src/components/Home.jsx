@@ -14,7 +14,6 @@ export default function Home() {
         </button>
       </header>
       <section className="hero">
-        <image src="" alt="" className="hero-image" />
         <div className="hero-content">
           <h2>START YOUR FITNESS JOURNEY</h2>
           <p>Get yor personalized meal plan for healthy living</p>

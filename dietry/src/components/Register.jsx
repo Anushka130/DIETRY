@@ -23,6 +23,12 @@ export default function Register() {
   function handleSubmit(event) {
     event.preventDefault();
 
+    // Validate all fields
+    if (!userDetails.name || !userDetails.email || !userDetails.password || !userDetails.age) {
+      toast.error("All fields are required");
+      return; // Prevent form submission
+    }
+
     fetch("http://127.0.0.1:3000/register", {
       method: "POST",
       body: JSON.stringify(userDetails),
@@ -32,18 +38,22 @@ export default function Register() {
     })
       .then((response) => response.json())
       .then((data) => {
-        toast.success(data.message); // Show success toast
-        setUserDetails({
-          name: "",
-          email: "",
-          password: "",
-          age: "",
-        });
+        if (data.message === "User Registered") {
+          toast.success(data.message); // Show success toast
+          setUserDetails({
+            name: "",
+            email: "",
+            password: "",
+            age: "",
+          });
 
-        // Redirect to login page after successful registration
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
+          // Redirect to login page only if registration is successful
+          setTimeout(() => {
+            navigate("/login");
+          }, 2000);
+        } else {
+          toast.error(data.message || "Registration failed"); // Handle errors
+        }
       })
       .catch((error) => {
         console.error(error);
@@ -60,7 +70,7 @@ export default function Register() {
           type="text"
           required
           onChange={handleInput}
-          placeholder="Enter Your name"
+          placeholder="Enter Your Name"
           name="name"
           value={userDetails.name}
         />
@@ -69,7 +79,7 @@ export default function Register() {
           type="email"
           required
           onChange={handleInput}
-          placeholder="Enter Your email"
+          placeholder="Enter Your Email"
           name="email"
           value={userDetails.email}
         />
@@ -77,8 +87,9 @@ export default function Register() {
           className="inp"
           type="password"
           maxLength={10}
+          required
           onChange={handleInput}
-          placeholder="Enter Your password"
+          placeholder="Enter Your Password"
           name="password"
           value={userDetails.password}
         />
@@ -87,8 +98,9 @@ export default function Register() {
           min={10}
           max={100}
           type="number"
+          required
           onChange={handleInput}
-          placeholder="Enter Your age"
+          placeholder="Enter Your Age"
           name="age"
           value={userDetails.age}
         />
