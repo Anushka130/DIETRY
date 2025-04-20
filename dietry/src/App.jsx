@@ -1,11 +1,6 @@
 /* eslint-disable react/prop-types */
 import "./App.css";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
+import { BrowserRouter,Routes, Route, Navigate, useLocation, Router,
 } from "react-router-dom";
 import Register from "./components/Register";
 import Login from "./components/Login";
@@ -18,10 +13,23 @@ import AllergySelection from "./components/AllergySelection"; // Import allergy 
 import Home from "./components/Home";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Sidebar from "./components/sidebar/Sidebar";
+import Dashboard from "./components/Dashboard/Dashboard";
+
+
+
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   const [loggedUser, setLoggedUser] = useState(
     JSON.parse(sessionStorage.getItem("diet-user"))
+
+    
   );
 
   return (
@@ -40,14 +48,17 @@ function App() {
           pauseOnHover={false}
           theme="colored"
         />
-        <AppRoutes loggedUser={loggedUser} setLoggedUser={setLoggedUser} />
+        <AppRoutes loggedUser={loggedUser} 
+        setLoggedUser={setLoggedUser}
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar} />
       </BrowserRouter>
     </UserContext.Provider>
   );
 }
 
 // Moved routing logic into a separate component
-function AppRoutes({ loggedUser }) {
+function AppRoutes({ loggedUser, isSidebarOpen, toggleSidebar }) {
   const location = useLocation();
 
   const hasDetails =
@@ -74,12 +85,32 @@ function AppRoutes({ loggedUser }) {
     }
   }, [loggedUser, hasDetails, hasAllergyInfo, location.pathname]);
 
+  const isDashboardRoute = ["/dashboard", "/track"].includes(location.pathname)&& loggedUser
+
+  if(isDashboardRoute) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+        <div className={`flex-1 ${isSidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>
+          <Routes>
+            <Route
+              path="/dashboard"
+              element={<Private Component={() => <Dashboard isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />} />}
+            />
+            <Route path="/track" element={hasDetails ? <Private Component={Track} /> : <Navigate to="/details" />} />
+          </Routes>
+        </div>
+      </div>
+    )
+  }
+
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
       <Route
-        path="/home"
+        path="/track"
         element={
           hasDetails ? (
             <Private Component={Track} />
@@ -94,6 +125,9 @@ function AppRoutes({ loggedUser }) {
       <Route path="/home" element={<Home />} />
       <Route path="/login" element={<Login />} />
     </Routes>
+    
+
+
   );
 }
 

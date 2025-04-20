@@ -1,19 +1,35 @@
 const jwt = require("jsonwebtoken");
 
-function verifyToken(req, res, next) {
-    const token = req.headers.authorization?.split(" ")[1]; // Extract token from "Bearer <token>"
-    
-    if (!token) {
+const verifyToken = (req, res, next) => {
+    console.log("🔍 Request Headers:", req.headers); // Log headers
+
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+        console.log("❌ No token provided in request!");
         return res.status(403).send({ message: "Access Denied. No token provided." });
     }
 
-    jwt.verify(token, "diet", (err, decoded) => {
+    const tokenParts = authHeader.split(" ");
+    if (tokenParts.length !== 2 || tokenParts[0] !== "Bearer") {
+        console.log("❌ Invalid token format:", authHeader);
+        return res.status(403).send({ message: "Invalid Token Format." });
+    }
+
+    const token = tokenParts[1]; // Extract token
+    console.log("✅ Extracted Token:", token);
+
+    jwt.verify(token, "diet", (err, decoded) => {  // Ensure the secret key matches login
         if (err) {
-            return res.status(401).send({ message: "Invalid token" });
+            console.log("❌ JWT Verification Error:", err);
+            if (err.name === "TokenExpiredError") {
+                return res.status(401).send({ message: "Token Expired. Please log in again." });
+            }
+            return res.status(401).send({ message: "Invalid Token" });
         }
-        req.user = decoded; // Attach decoded email to request
+        console.log("✅ Decoded User:", decoded);
+        req.user = decoded;
         next();
     });
-}
+};
 
 module.exports = verifyToken;

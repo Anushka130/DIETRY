@@ -92,7 +92,7 @@ app.post("/login", async (req, res) => {
  * @route GET /foods
  * @desc Get all food items (protected route)
  */
-app.get("/foods", verifyToken, async (req, res) => {
+app.get("/foods",  async (req, res) => {
   try {
     let foods = await foodModel.find();
     res.send(foods);
@@ -174,6 +174,31 @@ app.post("/update-allergy", verifyToken, async (req, res) => {
     res.status(500).send({ message: "Error updating allergy information" });
   }
 });
+
+  //endpoint to search food by name
+   
+  app.get("/foods/:name",async(req,res)=>{
+
+    try{
+     let foods = await foodModel.find({name:{$regex:req.params.name,$options:'i'}})
+     if(foods.length!==0)
+     {
+      res.send(foods);
+     }else{
+      res.status(404).send({message:"Food Item Not Found"})
+     }
+    }
+    catch(err){
+      console.log(err);
+      res.status(500).send({message:"Some Problem in getting the food"})
+    }
+
+  })
+
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

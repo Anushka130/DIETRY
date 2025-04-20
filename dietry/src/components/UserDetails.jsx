@@ -27,7 +27,7 @@ export default function UserDetails() {
     event.preventDefault();
     const token = JSON.parse(sessionStorage.getItem("diet-user")).token;
 
-    fetch("http://127.0.0.2.1:3000/user-details", {
+    fetch("http://127.0.0.1:3000/user-details", {
         method: "POST",
         headers: {
             'Content-Type': 'application/json',
@@ -45,21 +45,21 @@ export default function UserDetails() {
         setLoggedUser(storedUser);
 
         setTimeout(() => {
-            navigate('/allergy-selection');  // Redirect to allergy selection after details
+            navigate('/allergy-selection');
         }, 2000);
     })
     .catch(error => {
         setMessage({ type: "error", text: "Failed to update details" });
         console.error(error);
     });
-}
+  }
 
   return (
-    <section className="container">
-      <form className="form" onSubmit={handleSubmit}>
-        <h1>Complete Your Profile</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#E8F5E9] to-[#A5D6A7] text-[#004D40] pt-[70px]">
+      <form className="bg-white p-6 rounded-xl shadow-lg w-[350px] text-center" onSubmit={handleSubmit}>
+        <h1 className="text-2xl font-bold text-[#004D40] mb-4">Complete Your Profile</h1>
         <input
-          className="inp"
+          className="w-full p-4 border-2 border-[#28A745] rounded-lg text-base outline-none transition-all duration-300 mb-4 h-[50px] focus:border-[#FF9800] focus:shadow-[0_0_6px_rgba(255,152,0,0.5)]"
           type="number"
           name="height"
           placeholder="Height (cm)"
@@ -68,7 +68,7 @@ export default function UserDetails() {
           required
         />
         <input
-          className="inp"
+          className="w-full p-4 border-2 border-[#28A745] rounded-lg text-base outline-none transition-all duration-300 mb-4 h-[50px] focus:border-[#FF9800] focus:shadow-[0_0_6px_rgba(255,152,0,0.5)]"
           type="number"
           name="weight"
           placeholder="Weight (kg)"
@@ -77,7 +77,7 @@ export default function UserDetails() {
           required
         />
         <select
-          className="inp"
+          className="w-full p-4 border-2 border-[#28A745] rounded-lg text-base outline-none transition-all duration-300 mb-4 h-[50px] focus:border-[#FF9800] focus:shadow-[0_0_6px_rgba(255,152,0,0.5)]"
           name="gender"
           value={userDetails.gender}
           onChange={handleInput}
@@ -89,7 +89,7 @@ export default function UserDetails() {
           <option value="other">Other</option>
         </select>
         <select
-          className="inp"
+          className="w-full p-4 border-2 border-[#28A745] rounded-lg text-base outline-none transition-all duration-300 mb-4 h-[50px] focus:border-[#FF9800] focus:shadow-[0_0_6px_rgba(255,152,0,0.5)]"
           name="activityLevel"
           value={userDetails.activityLevel}
           onChange={handleInput}
@@ -102,7 +102,7 @@ export default function UserDetails() {
           <option value="active">Very Active</option>
         </select>
         <select
-          className="inp"
+          className="w-full p-4 border-2 border-[#28A745] rounded-lg text-base outline-none transition-all duration-300 mb-4 h-[50px] focus:border-[#FF9800] focus:shadow-[0_0_6px_rgba(255,152,0,0.5)]"
           name="goal"
           value={userDetails.goal}
           onChange={handleInput}
@@ -113,9 +113,11 @@ export default function UserDetails() {
           <option value="maintain">Maintain Weight</option>
           <option value="gain_muscle">Gain Muscle</option>
         </select>
-        <button className="btn">Save Details</button>
-        <p className={message.type}>{message.text}</p>
+        <button className="w-full p-3 mt-2 border-none rounded-lg text-base font-bold cursor-pointer transition-all duration-300 bg-[#a7dfa2] hover:bg-[#28A745] hover:text-white">
+          Save Details
+        </button>
+        <p className={message.type === "success" ? "text-green-600" : "text-red-600"}>{message.text}</p>
       </form>
-    </section>
+    </div>
   );
 }

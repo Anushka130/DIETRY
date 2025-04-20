@@ -32,7 +32,7 @@ export default function Register() {
     })
       .then((response) => response.json())
       .then((data) => {
-        toast.success(data.message); // Show success toast
+        toast.success(data.message);
         setUserDetails({
           name: "",
           email: "",
@@ -40,23 +40,22 @@ export default function Register() {
           age: "",
         });
 
-        // Redirect to login page after successful registration
         setTimeout(() => {
           navigate("/login");
         }, 2000);
       })
       .catch((error) => {
         console.error(error);
-        toast.error("Registration failed"); // Show error toast
+        toast.error("Registration failed");
       });
   }
 
   return (
-    <section className="container">
-      <form className="form" onSubmit={handleSubmit}>
-        <h1>Register for Fitness</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#E8F5E9] to-[#A5D6A7] text-[#004D40] pt-[70px]">
+      <form className="bg-white p-6 rounded-xl shadow-lg w-[350px] text-center" onSubmit={handleSubmit}>
+        <h1 className="text-2xl font-bold text-[#004D40] mb-4">Register for Fitness</h1>
         <input
-          className="inp"
+          className="w-full p-4 border-2 border-[#28A745] rounded-lg text-base outline-none transition-all duration-300 mb-4 h-[50px] focus:border-[#FF9800] focus:shadow-[0_0_6px_rgba(255,152,0,0.5)]"
           type="text"
           required
           onChange={handleInput}
@@ -65,7 +64,7 @@ export default function Register() {
           value={userDetails.name}
         />
         <input
-          className="inp"
+          className="w-full p-4 border-2 border-[#28A745] rounded-lg text-base outline-none transition-all duration-300 mb-4 h-[50px] focus:border-[#FF9800] focus:shadow-[0_0_6px_rgba(255,152,0,0.5)]"
           type="email"
           required
           onChange={handleInput}
@@ -74,7 +73,7 @@ export default function Register() {
           value={userDetails.email}
         />
         <input
-          className="inp"
+          className="w-full p-4 border-2 border-[#28A745] rounded-lg text-base outline-none transition-all duration-300 mb-4 h-[50px] focus:border-[#FF9800] focus:shadow-[0_0_6px_rgba(255,152,0,0.5)]"
           type="password"
           maxLength={10}
           onChange={handleInput}
@@ -83,7 +82,7 @@ export default function Register() {
           value={userDetails.password}
         />
         <input
-          className="inp"
+          className="w-full p-4 border-2 border-[#28A745] rounded-lg text-base outline-none transition-all duration-300 mb-4 h-[50px] focus:border-[#FF9800] focus:shadow-[0_0_6px_rgba(255,152,0,0.5)]"
           min={10}
           max={100}
           type="number"
@@ -92,11 +91,13 @@ export default function Register() {
           name="age"
           value={userDetails.age}
         />
-        <button className="btn">Register</button>
-        <p>
-          Already have an account? <Link to="/login">Login</Link>
+        <button className="w-full p-3 mt-2 border-none rounded-lg text-base font-bold cursor-pointer transition-all duration-300 bg-[#a7dfa2] hover:bg-[#28A745] hover:text-white">
+          Register
+        </button>
+        <p className="mt-4">
+          Already have an account? <Link to="/login" className="text-[#FF9800] font-bold no-underline transition-all duration-300 hover:underline">Login</Link>
         </p>
       </form>
-    </section>
+    </div>
   );
 }
