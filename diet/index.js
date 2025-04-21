@@ -174,6 +174,33 @@ app.post("/update-allergy", verifyToken, async (req, res) => {
     res.status(500).send({ message: "Error updating allergy information" });
   }
 });
+/**
+ * @route GET /user/:id
+ * @desc Get user details by ID
+ */
+app.get("/user/:id", verifyToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Optional: Check if the ID in token matches the requested ID
+    if (req.user.id !== userId) {
+      return res.status(403).send({ message: "Unauthorized access" });
+    }
+
+    const user = await userModel.findById(userId).select("-password"); // exclude password
+
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    res.status(200).send(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Error fetching user details" });
+  }
+});
+
+
 
   //endpoint to search food by name
    
