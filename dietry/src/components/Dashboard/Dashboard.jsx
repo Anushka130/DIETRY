@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts"
 
+// Data for chart and stats
 const workoutData = [
   { name: "Mon", Cardio: 40, Strength: 24, Flexibility: 10 },
   { name: "Tue", Cardio: 30, Strength: 38, Flexibility: 15 },
@@ -21,8 +22,72 @@ const workoutData = [
   { name: "Sun", Cardio: 34, Strength: 43, Flexibility: 18 },
 ]
 
+const stats = [
+  {
+    title: "Completed Workouts",
+    value: "8,360",
+    change: "-12.54%",
+    isPositive: false,
+    icon: (
+      <svg className="w-6 h-6 text-[#28A745]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+    ),
+  },
+  {
+    title: "Calories Burned",
+    value: "543,583",
+    change: "+28.14%",
+    isPositive: true,
+    icon: (
+      <svg className="w-6 h-6 text-[#28A745]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ),
+  },
+]
+
+// Activity types with estimated calories burned per minute (for simplicity)
+const activityTypes = [
+  { label: "Running", calorieRate: 7 },
+  { label: "Cycling", calorieRate: 5 },
+  { label: "Swimming", calorieRate: 6 },
+  { label: "Weight Training", calorieRate: 4 },
+  { label: "Yoga", calorieRate: 3 },
+]
+
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState("This Week")
+  const [recentActivities, setRecentActivities] = useState([])
+
+  const [newActivity, setNewActivity] = useState({
+    activity: "",
+    duration: "",
+  })
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const calculateCalories = (activity, duration) => {
+    const selectedActivity = activityTypes.find(item => item.label === activity)
+    return selectedActivity ? selectedActivity.calorieRate * duration : 0
+  }
+
+  const handleAddActivity = (e) => {
+    e.preventDefault()
+    if (!newActivity.activity || !newActivity.duration) return
+
+    const calories = calculateCalories(newActivity.activity, parseInt(newActivity.duration))
+
+    const addedActivity = {
+      activity: newActivity.activity,
+      duration: parseInt(newActivity.duration),
+      calories,
+    }
+
+    setRecentActivities([addedActivity, ...recentActivities])
+    setNewActivity({ activity: "", duration: "" })
+    setIsModalOpen(false) // Close modal after submitting
+  }
 
   return (
     <div className="flex-1 transition-all duration-300">
@@ -34,10 +99,19 @@ const Dashboard = () => {
             <input
               type="text"
               placeholder="Search..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28A745] focus:border-transparent"
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#28A745]"
             />
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           </div>
+
+          {/* Add Activity Button */}
+          <button
+            className="bg-[#28A745] text-white p-2 rounded-full hover:bg-green-600"
+            onClick={() => setIsModalOpen(true)}
+          >
+            Add Activity
+          </button>
+
           <button className="p-2 rounded-full hover:bg-gray-100 relative">
             <FaBell className="text-gray-500" />
             <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
@@ -49,60 +123,30 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="p-6 bg-gray-50">
-        {/* Stats Cards */}
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          {/* Completed Workouts */}
-          <div className="bg-white rounded-xl shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-gray-500 text-sm">Completed Workouts</p>
-                <h3 className="text-3xl font-bold text-[#004D40]">8,360</h3>
+          {stats.map((stat, index) => (
+            <div key={index} className="bg-white rounded-xl shadow p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-gray-500 text-sm">{stat.title}</p>
+                  <h3 className="text-3xl font-bold text-[#004D40]">{stat.value}</h3>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-[#E8F5E9] flex items-center justify-center">
+                  {stat.icon}
+                </div>
               </div>
-              <div className="h-12 w-12 rounded-full bg-[#E8F5E9] flex items-center justify-center">
-                <svg className="w-6 h-6 text-[#28A745]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <span className="text-red-500 text-sm font-medium flex items-center">
-                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M12 13a1 1 0 10-2 0v4a1 1 0 102 0v-4z" clipRule="evenodd" />
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
-                </svg>
-                12.54%
-              </span>
-              <span className="text-gray-500 text-sm ml-2">Last 30 days</span>
-            </div>
-          </div>
-
-          {/* Calories Burned */}
-          <div className="bg-white rounded-xl shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-gray-500 text-sm">Calories Burned</p>
-                <h3 className="text-3xl font-bold text-[#004D40]">543,583</h3>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-[#E8F5E9] flex items-center justify-center">
-                <svg className="w-6 h-6 text-[#28A745]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+              <div className="flex items-center">
+                <span className={`text-sm font-medium flex items-center ${stat.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                  {stat.change}
+                </span>
+                <span className="text-gray-500 text-sm ml-2">Last 30 days</span>
               </div>
             </div>
-            <div className="flex items-center">
-              <span className="text-green-500 text-sm font-medium flex items-center">
-                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M12 7a1 1 0 10-2 0v4a1 1 0 102 0V7z" clipRule="evenodd" />
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
-                </svg>
-                28.14%
-              </span>
-              <span className="text-gray-500 text-sm ml-2">Last 30 days</span>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Workout Chart */}
+        {/* Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-xl shadow p-6">
             <div className="flex items-center justify-between mb-6">
@@ -140,32 +184,35 @@ const Dashboard = () => {
             <h3 className="text-lg font-semibold text-[#004D40]">Recent Activity</h3>
             <button className="text-[#28A745] hover:underline text-sm font-medium">View All</button>
           </div>
+
+          {/* Activity Table */}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calories</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  {["Activity", "Duration", "Calories", "Date"].map((head) => (
+                    <th key={head} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {head}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {[1, 2, 3, 4, 5].map((item) => (
-                  <tr key={item} className="hover:bg-gray-50">
+                {recentActivities.map((activity, idx) => (
+                  <tr key={idx} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        {["Running", "Cycling", "Swimming", "Weight Training", "Yoga"][item - 1]}
+                        {activity.activity}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {[45, 30, 60, 50, 40][item - 1]} minutes
+                      {activity.duration} minutes
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {[320, 250, 400, 280, 180][item - 1]} kcal
+                      {activity.calories} kcal
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(Date.now() - item * 86400000).toLocaleDateString()}
+                      {new Date(Date.now() - idx * 86400000).toLocaleDateString()}
                     </td>
                   </tr>
                 ))}
@@ -174,6 +221,51 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Add Activity Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center">
+          <div className="bg-white rounded-xl p-8 w-96">
+            <h3 className="text-xl font-semibold text-[#004D40] mb-4">Add Activity</h3>
+            <form onSubmit={handleAddActivity}>
+              <select
+                className="border px-3 py-2 rounded-md text-sm w-full mb-4 focus:outline-none focus:ring-2 focus:ring-[#28A745]"
+                value={newActivity.activity}
+                onChange={(e) => setNewActivity({ ...newActivity, activity: e.target.value })}
+              >
+                <option value="">Select Activity</option>
+                {activityTypes.map((activity) => (
+                  <option key={activity.label} value={activity.label}>
+                    {activity.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                placeholder="Duration (min)"
+                className="border px-3 py-2 rounded-md text-sm w-full mb-4 focus:outline-none focus:ring-2 focus:ring-[#28A745]"
+                value={newActivity.duration}
+                onChange={(e) => setNewActivity({ ...newActivity, duration: e.target.value })}
+              />
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  className="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#28A745] text-white px-4 py-2 rounded-md hover:bg-green-600"
+                >
+                  Add Activity
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -15,6 +15,7 @@ import AllergySelection from "./components/AllergySelection";
 import Home from "./components/Home";
 import Sidebar from "./components/sidebar/Sidebar";
 import Dashboard from "./components/Dashboard/Dashboard";
+import User from "./components/User";
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(
@@ -113,6 +114,7 @@ function AppRoutes({ loggedUser }) {
       <Route path="/allergy-selection" element={<AllergySelection />} />
       <Route path="/home" element={<Home />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/profile" element={<User />} />
     </Routes>
   );
 }
