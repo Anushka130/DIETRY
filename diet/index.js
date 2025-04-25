@@ -174,33 +174,6 @@ app.post("/update-allergy", verifyToken, async (req, res) => {
     res.status(500).send({ message: "Error updating allergy information" });
   }
 });
-/**
- * @route GET /user/:id
- * @desc Get user details by ID
- */
-app.get("/user/:id", verifyToken, async (req, res) => {
-  try {
-    const userId = req.params.id;
-
-    // Optional: Check if the ID in token matches the requested ID
-    if (req.user.id !== userId) {
-      return res.status(403).send({ message: "Unauthorized access" });
-    }
-
-    const user = await userModel.findById(userId).select("-password"); // exclude password
-
-    if (!user) {
-      return res.status(404).send({ message: "User not found" });
-    }
-
-    res.status(200).send(user);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Error fetching user details" });
-  }
-});
-
-
 
   //endpoint to search food by name
    
@@ -223,10 +196,43 @@ app.get("/user/:id", verifyToken, async (req, res) => {
   })
 
 
-
-
-
-
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+
+/**
+ * @route POST /add-food
+ * @desc Add a new food item to the database
+ */
+app.post("/add-food", async (req, res) => {
+  try {
+    const { name, calories, protein, carbs, fats } = req.body;
+
+    if (!name || !calories) {
+      return res.status(400).send({ message: "Name and calories are required fields" });
+    }
+
+    const existingFood = await foodModel.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+    if (existingFood) {
+      return res.status(409).send({ message: "Food item with this name already exists" });
+    }
+
+    const newFood = new foodModel({
+      name,
+      calories,
+      protein: protein || 0,
+      carbs: carbs || 0,
+      fats: fats || 0
+    });
+
+    const savedFood = await newFood.save();
+
+    res.status(201).send({
+      message: "Food item added successfully",
+      food: savedFood
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Error adding food item" });
+  }
 });
