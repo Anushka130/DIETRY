@@ -23,7 +23,7 @@ export default function Register() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    fetch("http://127.0.0.1:3000/register", {
+    fetch("http://127.0.0.1:5000/register", {
       method: "POST",
       body: JSON.stringify(userDetails),
       headers: {

@@ -1,4 +1,3 @@
-"use client"
 
 import { Link, useNavigate } from "react-router-dom"
 import { useState, useContext, useEffect } from "react"
@@ -28,7 +27,7 @@ export default function Login() {
   function handleSubmit(event) {
     event.preventDefault()
 
-    fetch("http://127.0.0.1:3000/login", {
+    fetch("http://127.0.0.1:5000/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userCred),

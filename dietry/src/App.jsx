@@ -18,6 +18,10 @@ import Home from "./components/Home"
 import Sidebar from "./components/sidebar/Sidebar"
 import Dashboard from "./components/Dashboard/Dashboard"
 import FoodDiary from "./components/Food/FoodDiary"
+import Workout from "./components/Workout/Workout"
+import WorkoutPlanDetail from "./components/Workout/WorkoutPlanDetail"
+import CreateWorkoutPlan from "./components/Workout/CreateWorkoutPlan"
+import WorkoutPlanList from "./components/Workout/WorkoutPlanList"
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(JSON.parse(sessionStorage.getItem("diet-user")))
@@ -78,7 +82,8 @@ function AppRoutes({ loggedUser }) {
       "/food/dinner",
       "/food/snacks",
       "/food/water",
-      "/nutrition", // Add this route to support the old link
+      "/nutrition",
+      "/workout", // Add this route to support the old link
     ].includes(location.pathname) && loggedUser
 
   if (shouldShowSidebar) {
@@ -119,6 +124,9 @@ function AppRoutes({ loggedUser }) {
 
             {/* Add a redirect from the old nutrition path to the new food diary path */}
             <Route path="/nutrition" element={<Navigate to="/food/diary" replace />} />
+          
+            {/* Workout routes */}
+        <Route path="/workout" element={hasDetails ? <Private Component={Workout} /> : <Navigate to="/details" />}/>
           </Routes>
         </div>
       </div>

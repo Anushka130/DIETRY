@@ -49,7 +49,7 @@ const Sidebar = () => {
             </li>
             <li>
               <Link
-                to="/plans"
+                to="/workout"
                 className="flex items-center px-4 py-3 text-[#004D40] hover:bg-[#E8F5E9] rounded-lg mx-2 font-medium"
               >
                 <FaFileAlt className="mr-4 text-[#28A745]" />
@@ -66,7 +66,7 @@ const Sidebar = () => {
               >
                 <FaUtensils className="mr-4 text-[#28A745]" />
                 <div className="flex items-center justify-between w-full">
-                  <span>Food</span>
+                  <span>Foods</span>
                   {foodMenuOpen ? (
                     <FaChevronDown className="text-gray-400 text-xs" />
                   ) : (
@@ -140,7 +140,7 @@ const Sidebar = () => {
                 to="/reports"
                 className="flex items-center px-4 py-3 text-[#004D40] hover:bg-[#E8F5E9] rounded-lg mx-2 font-medium"
               >
-                <FaRegStickyNote className="mr-4 text-gray-500" />
+                <FaRegStickyNote className="mr-4 text-[#28A745]" />
                 <span>Weekly Report</span>
               </Link>
             </li>

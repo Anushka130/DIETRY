@@ -111,7 +111,7 @@ const FoodDiary = () => {
           </div>
           <div className="bg-[#004D40] text-white p-2 rounded-t-md">
             <div>Sodium</div>
-            <div className="text-xs">mg</div>
+            <div className="text-xs">g</div>
           </div>
           <div className="bg-[#004D40] text-white p-2 rounded-t-md">
             <div>Sugar</div>
