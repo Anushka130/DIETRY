@@ -30,7 +30,7 @@ const User = () => {
     }
 
     try {
-      const response = await axios.get("http://127.0.0.1:3000/me", {
+      const response = await axios.get("http://127.0.0.1:5000/me", {
         headers: {
           Authorization: `Bearer ${loggedUser.token}`,
         },
@@ -53,7 +53,7 @@ const User = () => {
     e.preventDefault();
     const token = loggedUser.token;
 
-    fetch("http://127.0.0.1:3000/user-details", {
+    fetch("http://127.0.0.1:5000/user-details", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,7 +80,7 @@ const User = () => {
     e.preventDefault();
     const token = loggedUser.token;
 
-    fetch("http://127.0.0.1:3000/update-allergy", {
+    fetch("http://127.0.0.1:5000/update-allergy", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

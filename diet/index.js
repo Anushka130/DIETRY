@@ -1,24 +1,28 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
-require("dotenv").config();
+const express = require("express")
+const mongoose = require("mongoose")
+const bcrypt = require("bcryptjs")
+const jwt = require("jsonwebtoken")
+const cors = require('cors');
+require("dotenv").config()
 
-const userModel = require("./models/userModel");
-const foodModel = require("./models/foodModel");
-const verifyToken = require("./models/verifyToken"); // Keep token verification
+const userModel = require("./models/userModel")
+const foodModel = require("./models/foodModel")
+const PORT = process.env.PORT || 5000
 
-const PORT = process.env.PORT || 5000;
+const verifyToken = require("./verifyToken.js");
+
+
+
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/diet")
   .then(() => console.log("Database connected successfully"))
-  .catch((err) => console.log(err));
+  .catch((err) => console.log(err))
 
-const app = express();
-app.use(express.json());
-app.use(cors());
+const app = express()
+app.use(express.json())
+app.use(cors())
+
 
 /**
  * @route POST /register
@@ -26,17 +30,17 @@ app.use(cors());
  */
 app.post("/register", async (req, res) => {
   try {
-    let user = req.body;
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(user.password, salt);
-    user.hasAllergyInfo = false; // Ensure allergy step is false by default
-    await userModel.create(user);
-    res.status(201).send({ message: "User Registered" });
+    const user = req.body
+    const salt = await bcrypt.genSalt(10)
+    user.password = await bcrypt.hash(user.password, salt)
+    user.hasAllergyInfo = false // Ensure allergy step is false by default
+    await userModel.create(user)
+    res.status(201).send({ message: "User Registered" })
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Error occurred during registration" });
+    console.error(err)
+    res.status(500).send({ message: "Error occurred during registration" })
   }
-});
+})
 
 /**
  * @route POST /login
@@ -44,63 +48,59 @@ app.post("/register", async (req, res) => {
  */
 app.post("/login", async (req, res) => {
   try {
-    const userCred = req.body;
-    const user = await userModel.findOne({ email: userCred.email });
+    const userCred = req.body
+    const user = await userModel.findOne({ email: userCred.email })
 
     if (!user) {
-      return res.status(404).send({ message: "User not registered" });
+      return res.status(404).send({ message: "User not registered" })
     }
 
-    const isMatch = await bcrypt.compare(userCred.password, user.password);
+    const isMatch = await bcrypt.compare(userCred.password, user.password)
     if (!isMatch) {
-      return res.status(403).send({ message: "Incorrect Password" });
+      return res.status(403).send({ message: "Incorrect Password" })
     }
 
-    jwt.sign(
-      { email: user.email },
-      "diet",
-      { expiresIn: "1h" },
-      async (err, token) => {
-        if (err) {
-          return res.status(500).send({ message: "Error generating token" });
-        }
-
-        const userData = {
-          name: user.name,
-          email: user.email,
-          age: user.age,
-          height: user.height,
-          weight: user.weight,
-          gender: user.gender,
-          activityLevel: user.activityLevel,
-          goal: user.goal,
-          allergy: user.allergy,
-          hasDetails: user.hasDetails, // Virtual field
-          hasAllergyInfo: user.hasAllergyInfo, // Allergy selection status
-        };
-
-        res.send({ message: "Login Success", token, ...userData });
+    jwt.sign({ email: user.email }, "diet", { expiresIn: "1h" }, async (err, token) => {
+      if (err) {
+        return res.status(500).send({ message: "Error generating token" })
       }
-    );
+
+      const userData = {
+        id: user._id, // Include user ID for workout plan operations
+        name: user.name,
+        email: user.email,
+        age: user.age,
+        height: user.height,
+        weight: user.weight,
+        gender: user.gender,
+        activityLevel: user.activityLevel,
+        goal: user.goal,
+        allergy: user.allergy,
+        hasDetails: user.hasDetails, // Virtual field
+        hasAllergyInfo: user.hasAllergyInfo, // Allergy selection status
+      }
+
+      res.send({ message: "Login Success", token, ...userData })
+    })
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Server error" });
+    console.error(err)
+    res.status(500).send({ message: "Server error" })
   }
-});
+})
 
 /**
  * @route GET /foods
  * @desc Get all food items (protected route)
  */
-app.get("/foods",  async (req, res) => {
+app.get("/foods", async (req, res) => {
   try {
-    let foods = await foodModel.find();
-    res.send(foods);
+    const foods = await foodModel.find()
+    res.send(foods)
   } catch (err) {
-    console.log(err);
-    res.status(500).send({ message: "Could not fetch food items" });
+    console.log(err)
+    res.status(500).send({ message: "Could not fetch food items" })
   }
-});
+})
 
 /**
  * @route POST /user-details
@@ -108,22 +108,23 @@ app.get("/foods",  async (req, res) => {
  */
 app.post("/user-details", verifyToken, async (req, res) => {
   try {
-    const { height, weight, gender, activityLevel, goal } = req.body;
-    const email = req.user.email;
+    const { height, weight, gender, activityLevel, goal } = req.body
+    const email = req.user.email
 
     const updatedUser = await userModel.findOneAndUpdate(
       { email },
       { height, weight, gender, activityLevel, goal },
-      { new: true }
-    );
+      { new: true },
+    )
 
     if (!updatedUser) {
-      return res.status(404).send({ message: "User not found" });
+      return res.status(404).send({ message: "User not found" })
     }
 
     res.status(200).send({
       message: "User details updated successfully",
       user: {
+        id: updatedUser._id,
         name: updatedUser.name,
         email: updatedUser.email,
         age: updatedUser.age,
@@ -134,12 +135,12 @@ app.post("/user-details", verifyToken, async (req, res) => {
         goal: updatedUser.goal,
         hasDetails: updatedUser.hasDetails,
       },
-    });
+    })
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Error updating user details" });
+    console.error(err)
+    res.status(500).send({ message: "Error updating user details" })
   }
-});
+})
 
 /**
  * @route POST /update-allergy
@@ -147,53 +148,75 @@ app.post("/user-details", verifyToken, async (req, res) => {
  */
 app.post("/update-allergy", verifyToken, async (req, res) => {
   try {
-    const { allergy } = req.body;
-    const email = req.user.email;
+    const { allergy } = req.body
+    const email = req.user.email
 
     const updatedUser = await userModel.findOneAndUpdate(
       { email },
       { allergy, hasAllergyInfo: true }, // Mark allergy step as completed
-      { new: true }
-    );
+      { new: true },
+    )
 
     if (!updatedUser) {
-      return res.status(404).send({ message: "User not found" });
+      return res.status(404).send({ message: "User not found" })
     }
 
     res.status(200).send({
       message: "Allergy information updated successfully",
       user: {
+        id: updatedUser._id,
         name: updatedUser.name,
         email: updatedUser.email,
         allergy: updatedUser.allergy,
         hasAllergyInfo: updatedUser.hasAllergyInfo,
       },
-    });
+    })
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Error updating allergy information" });
+    console.error(err)
+    res.status(500).send({ message: "Error updating allergy information" })
   }
-});
+})
 
-  //endpoint to search food by name
-   
-  app.get("/foods/:name",async(req,res)=>{
+/**
+ * @route GET /user/:id
+ * @desc Get user details by ID
+ */
+app.get("/user/:id", verifyToken, async (req, res) => {
+  try {
+    const userId = req.params.id
 
-    try{
-     let foods = await foodModel.find({name:{$regex:req.params.name,$options:'i'}})
-     if(foods.length!==0)
-     {
-      res.send(foods);
-     }else{
-      res.status(404).send({message:"Food Item Not Found"})
-     }
-    }
-    catch(err){
-      console.log(err);
-      res.status(500).send({message:"Some Problem in getting the food"})
+    // Optional: Check if the ID in token matches the requested ID
+    if (req.user.id !== userId) {
+      return res.status(403).send({ message: "Unauthorized access" })
     }
 
-  })
+    const user = await userModel.findById(userId).select("-password") // exclude password
+
+    if (!user) {
+      return res.status(404).send({ message: "User not found" })
+    }
+
+    res.status(200).send(user)
+  } catch (err) {
+    console.error(err)
+    res.status(500).send({ message: "Error fetching user details" })
+  }
+})
+
+//endpoint to search food by name
+app.get("/foods/:name", async (req, res) => {
+  try {
+    const foods = await foodModel.find({ name: { $regex: req.params.name, $options: "i" } })
+    if (foods.length !== 0) {
+      res.send(foods)
+    } else {
+      res.status(404).send({ message: "Food Item Not Found" })
+    }
+  } catch (err) {
+    console.log(err)
+    res.status(500).send({ message: "Some Problem in getting the food" })
+  }
+})
 
 /**
  * @route GET /me
@@ -220,3 +243,5 @@ app.get("/me", verifyToken, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+
