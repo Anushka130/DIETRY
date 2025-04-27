@@ -7,6 +7,9 @@ require("dotenv").config()
 
 const userModel = require("./models/userModel")
 const foodModel = require("./models/foodModel")
+const workoutRoutes = require("./routes/workoutRoutes");
+const workoutSessionRoutes = require("./routes/workoutSessionRoutes");
+const activityRoutes = require("./routes/activityRoutes");
 const PORT = process.env.PORT || 5000
 
 const verifyToken = require("./verifyToken.js");
@@ -22,7 +25,10 @@ mongoose
 const app = express()
 app.use(express.json())
 app.use(cors())
-
+app.use("/api/workouts", workoutRoutes);
+app.use("/api/workout-sessions", workoutSessionRoutes);
+app.use("/api/activities", activityRoutes);
+console.log("Workout session routes mounted!");
 
 /**
  * @route POST /register
@@ -60,7 +66,7 @@ app.post("/login", async (req, res) => {
       return res.status(403).send({ message: "Incorrect Password" })
     }
 
-    jwt.sign({ email: user.email }, "diet", { expiresIn: "1h" }, async (err, token) => {
+    jwt.sign({id:user._id, email: user.email }, "diet", { expiresIn: "1h" }, async (err, token) => {
       if (err) {
         return res.status(500).send({ message: "Error generating token" })
       }

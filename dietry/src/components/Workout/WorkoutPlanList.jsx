@@ -1,80 +1,70 @@
 // components/Workout/WorkoutPlanList.jsx
-import { useState } from "react"
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   FaPlus, 
   FaChevronRight, 
   FaDumbbell, 
   FaClock, 
   FaChartBar, 
-  FaCalendarAlt 
-} from "react-icons/fa"
+  FaCalendarAlt, 
+  FaHistory 
+} from "react-icons/fa"; // 👈 also import History icon!
 
-const WorkoutPlanList = ({ plans, onSelectPlan, onCreatePlan }) => {
-  const [activeTab, setActiveTab] = useState("all")
+const WorkoutPlanList = ({ plans, onCreatePlan }) => {
+  const [activeTab, setActiveTab] = useState("all");
+  const navigate = useNavigate();
 
   const filteredPlans = activeTab === "all" 
     ? plans 
-    : plans.filter((plan) => plan.category.toLowerCase() === activeTab.toLowerCase())
+    : plans.filter((plan) => plan.category.toLowerCase() === activeTab.toLowerCase());
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Header with Create Plan + History */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-[#004D40]">Workout Plans</h1>
-        <button 
-          onClick={onCreatePlan}
-          className="flex items-center gap-2 bg-[#28A745] text-white px-4 py-2 rounded-lg hover:bg-[#218838] transition-colors"
-        >
-          <FaPlus className="text-sm" /> Create Plan
-        </button>
+        <div className="flex gap-4">
+          {/* 🔴 History Button */}
+          <button 
+            onClick={() => navigate("/workout/history")}
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <FaHistory className="text-sm" /> History
+          </button>
+
+          {/* 🟢 Create Plan Button */}
+          <button 
+            onClick={onCreatePlan}
+            className="flex items-center gap-2 bg-[#28A745] text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <FaPlus className="text-sm" /> Create Plan
+          </button>
+        </div>
       </div>
 
+      {/* Tabs */}
       <div className="grid grid-cols-4 gap-2 mb-6">
-        <button
-          className={`py-2 px-4 rounded-lg font-medium transition-colors ${
-            activeTab === "all" 
-              ? "bg-[#28A745] text-white" 
-              : "bg-gray-100 text-gray-700 hover:bg-[#E8F5E9]"
-          }`}
-          onClick={() => setActiveTab("all")}
-        >
-          All Plans
-        </button>
-        <button
-          className={`py-2 px-4 rounded-lg font-medium transition-colors ${
-            activeTab === "strength" 
-              ? "bg-[#28A745] text-white" 
-              : "bg-gray-100 text-gray-700 hover:bg-[#E8F5E9]"
-          }`}
-          onClick={() => setActiveTab("strength")}
-        >
-          Strength
-        </button>
-        <button
-          className={`py-2 px-4 rounded-lg font-medium transition-colors ${
-            activeTab === "cardio" 
-              ? "bg-[#28A745] text-white" 
-              : "bg-gray-100 text-gray-700 hover:bg-[#E8F5E9]"
-          }`}
-          onClick={() => setActiveTab("cardio")}
-        >
-          Cardio
-        </button>
-        <button
-          className={`py-2 px-4 rounded-lg font-medium transition-colors ${
-            activeTab === "hypertrophy" 
-              ? "bg-[#28A745] text-white" 
-              : "bg-gray-100 text-gray-700 hover:bg-[#E8F5E9]"
-          }`}
-          onClick={() => setActiveTab("hypertrophy")}
-        >
-          Hypertrophy
-        </button>
+        {["all", "strength", "cardio", "hypertrophy"].map((tab) => (
+          <button
+            key={tab}
+            className={`py-2 px-4 rounded-lg font-medium transition-colors ${
+              activeTab === tab 
+                ? "bg-[#28A745] text-white" 
+                : "bg-gray-100 text-gray-700 hover:bg-[#E8F5E9]"
+            }`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
       </div>
 
+      {/* Plans */}
       {filteredPlans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {filteredPlans.map((plan) => (
-            <div key={plan.id} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <div key={plan._id} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="bg-gradient-to-r from-[#004D40] to-[#00796B] text-white p-4">
                 <div className="flex justify-between items-start">
                   <div>
@@ -100,19 +90,19 @@ const WorkoutPlanList = ({ plans, onSelectPlan, onCreatePlan }) => {
                 <div className="mt-3">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm font-medium text-gray-700">Progress</span>
-                    <span className="text-sm font-medium text-[#28A745]">{plan.progress}%</span>
+                    <span className="text-sm font-medium text-[#28A745]">{plan.progress || 0}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-[#28A745] h-2 rounded-full" 
-                      style={{ width: `${plan.progress}%` }}
+                      style={{ width: `${plan.progress || 0}%` }}
                     ></div>
                   </div>
                 </div>
               </div>
               <div className="bg-gray-50 border-t border-gray-200 p-3">
                 <button
-                  onClick={() => onSelectPlan(plan.id)}
+                  onClick={() => navigate(`/workout/${plan._id}`)}
                   className="w-full text-[#28A745] hover:text-[#218838] font-medium flex justify-between items-center"
                 >
                   View Details
@@ -129,7 +119,7 @@ const WorkoutPlanList = ({ plans, onSelectPlan, onCreatePlan }) => {
             No {activeTab !== "all" ? activeTab : ""} Plans Yet
           </h3>
           <p className="text-gray-500 mb-6 max-w-md">
-            You haven't created any {activeTab !== "all" ? activeTab : ""} workout plans yet. 
+            You haven't created any {activeTab !== "all" ? activeTab : ""} workout plans yet.
             Create your first one to get started.
           </p>
           <button
@@ -141,6 +131,7 @@ const WorkoutPlanList = ({ plans, onSelectPlan, onCreatePlan }) => {
         </div>
       )}
 
+      {/* Upcoming Workout Reminder */}
       <div className="bg-[#E8F5E9] border border-[#C8E6C9] rounded-lg p-4 mt-6">
         <div className="flex items-start">
           <FaCalendarAlt className="text-[#28A745] mr-3 mt-1" />
@@ -154,7 +145,7 @@ const WorkoutPlanList = ({ plans, onSelectPlan, onCreatePlan }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default WorkoutPlanList
+export default WorkoutPlanList;

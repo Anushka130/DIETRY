@@ -1,31 +1,95 @@
 // components/Workout/CreateWorkoutPlan.jsx
-import { useState } from "react"
-import { FaArrowLeft, FaPlus, FaTrash } from "react-icons/fa"
+
+import { useState } from "react";
+import { FaArrowLeft, FaPlus, FaTrash } from "react-icons/fa";
+import axiosInstance from "../../axiosInstance";
+import { toast } from "react-toastify"; 
+import "react-toastify/dist/ReactToastify.css";
 
 const CreateWorkoutPlan = ({ onBack }) => {
-  const [exercises, setExercises] = useState([{ name: "", sets: "", reps: "", weight: "" }])
+  const [exercises, setExercises] = useState([
+    { name: "", sets: "", reps: "", weight: "" }
+  ]);
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "",
+    difficulty: "",
+    duration: "",
+    description: "",
+    frequency: "",
+  });
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value
+    });
+  };
 
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "" }])
-  }
+    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "" }]);
+  };
 
   const removeExercise = (index) => {
-    const updatedExercises = [...exercises]
-    updatedExercises.splice(index, 1)
-    setExercises(updatedExercises)
-  }
+    const updated = [...exercises];
+    updated.splice(index, 1);
+    setExercises(updated);
+  };
 
   const updateExercise = (index, field, value) => {
-    const updatedExercises = [...exercises]
-    updatedExercises[index] = { ...updatedExercises[index], [field]: value }
-    setExercises(updatedExercises)
-  }
+    const updated = [...exercises];
+    updated[index] = { ...updated[index], [field]: value };
+    setExercises(updated);
+  };
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // Here you would typically save the workout plan to your backend
-    onBack()
-  }
+  const validateExercises = () => {
+    if (exercises.length === 0) return false;
+    for (const ex of exercises) {
+      if (!ex.name.trim() || !ex.sets || !ex.reps.trim() || !ex.weight.trim()) {
+        return false;
+      }
+    }
+    return true;
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const payload = {
+      name: formData.name,
+      description: formData.description,
+      category: formData.category,
+      difficulty: formData.difficulty,
+      duration: formData.duration,
+      frequency: formData.frequency || "3x per week",
+      exercises: exercises.map((ex) => ({
+        name: ex.name,
+        sets: Number(ex.sets),
+        reps: ex.reps,
+        weight: ex.weight,
+      })),
+    };
+  
+    console.log("Submitting payload:", payload);
+  
+    try {
+      await axiosInstance.post("/workouts", payload);  // ✅ only payload, no userId
+      toast.success("Workout Plan Created Successfully!");
+      onBack();
+    } catch (error) {
+      console.error("Error creating workout plan:", error);
+  
+      if (error.response) {
+        console.error("Backend error response:", error.response.data);
+        toast.error(error.response.data.message || "Failed to create workout plan!");
+      } else {
+        toast.error("Failed to create workout plan!");
+      }
+    }
+  };
+  
+  
+  
+  
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -39,155 +103,130 @@ const CreateWorkoutPlan = ({ onBack }) => {
       <h1 className="text-2xl font-bold text-[#004D40] mb-6">Create New Workout Plan</h1>
 
       <form onSubmit={handleSubmit}>
+        {/* Form Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div>
-            <label htmlFor="plan-name" className="block text-gray-700 font-medium mb-2">
-              Plan Name
-            </label>
-            <input
-              type="text"
-              id="plan-name"
-              placeholder="e.g., Full Body Strength"
-              className="w-full p-2 border border-gray-300 rounded-lg"
-              required
-            />
-          </div>
+          <input
+            type="text"
+            id="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="Plan Name"
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            required
+          />
+          <select
+            id="category"
+            value={formData.category}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            required
+          >
+            <option value="">Select Category</option>
+            <option value="Strength">Strength</option>
+            <option value="Cardio">Cardio</option>
+            <option value="Hypertrophy">Hypertrophy</option>
+            <option value="Flexibility">Flexibility</option>
+            <option value="Endurance">Endurance</option>
+          </select>
 
-          <div>
-            <label htmlFor="category" className="block text-gray-700 font-medium mb-2">
-              Category
-            </label>
-            <select
-              id="category"
-              className="w-full p-2 border border-gray-300 rounded-lg"
-              required
-            >
-              <option value="">Select category</option>
-              <option value="strength">Strength</option>
-              <option value="cardio">Cardio</option>
-              <option value="hypertrophy">Hypertrophy</option>
-              <option value="flexibility">Flexibility</option>
-              <option value="endurance">Endurance</option>
-            </select>
-          </div>
+          <select
+            id="difficulty"
+            value={formData.difficulty}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            required
+          >
+            <option value="">Select Difficulty</option>
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
 
-          <div>
-            <label htmlFor="difficulty" className="block text-gray-700 font-medium mb-2">
-              Difficulty Level
-            </label>
-            <select
-              id="difficulty"
-              className="w-full p-2 border border-gray-300 rounded-lg"
-              required
-            >
-              <option value="">Select difficulty</option>
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </div>
+          <input
+            type="text"
+            id="duration"
+            value={formData.duration}
+            onChange={handleChange}
+            placeholder="Duration (e.g., 45 min)"
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            required
+          />
 
-          <div>
-            <label htmlFor="duration" className="block text-gray-700 font-medium mb-2">
-              Duration
-            </label>
-            <input
-              type="text"
-              id="duration"
-              placeholder="e.g., 45 min"
-              className="w-full p-2 border border-gray-300 rounded-lg"
-              required
-            />
-          </div>
+          <input
+            type="text"
+            id="frequency"
+            value={formData.frequency}
+            onChange={handleChange}
+            placeholder="Frequency (e.g., 3x per week)"
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            required
+          />
 
-          <div className="md:col-span-2">
-            <label htmlFor="description" className="block text-gray-700 font-medium mb-2">
-              Description
-            </label>
-            <textarea
-              id="description"
-              placeholder="Describe your workout plan..."
-              className="w-full p-2 border border-gray-300 rounded-lg min-h-[100px]"
-              required
-            ></textarea>
-          </div>
+          <textarea
+            id="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Describe your workout plan..."
+            className="w-full md:col-span-2 p-2 border border-gray-300 rounded-lg min-h-[100px]"
+            required
+          ></textarea>
         </div>
 
-        <div className="border border-gray-200 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-[#004D40] mb-4">Exercises</h2>
-          
-          <div className="space-y-6">
-            {exercises.map((exercise, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end pb-4 border-b border-gray-200"
-              >
-                <div className="md:col-span-2">
-                  <label htmlFor={`exercise-name-${index}`} className="block text-gray-700 text-sm font-medium mb-2">
-                    Exercise Name
-                  </label>
-                  <input
-                    id={`exercise-name-${index}`}
-                    value={exercise.name}
-                    onChange={(e) => updateExercise(index, "name", e.target.value)}
-                    placeholder="e.g., Bench Press"
-                    className="w-full p-2 border border-gray-300 rounded-lg"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor={`sets-${index}`} className="block text-gray-700 text-sm font-medium mb-2">
-                    Sets
-                  </label>
-                  <input
-                    id={`sets-${index}`}
-                    value={exercise.sets}
-                    onChange={(e) => updateExercise(index, "sets", e.target.value)}
-                    placeholder="e.g., 3"
-                    className="w-full p-2 border border-gray-300 rounded-lg"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor={`reps-${index}`} className="block text-gray-700 text-sm font-medium mb-2">
-                    Reps
-                  </label>
-                  <input
-                    id={`reps-${index}`}
-                    value={exercise.reps}
-                    onChange={(e) => updateExercise(index, "reps", e.target.value)}
-                    placeholder="e.g., 8-12"
-                    className="w-full p-2 border border-gray-300 rounded-lg"
-                    required
-                  />
-                </div>
-                <div className="flex items-center">
-                  <button
-                    type="button"
-                    onClick={() => removeExercise(index)}
-                    disabled={exercises.length === 1}
-                    className={`p-2 rounded-lg ${
-                      exercises.length === 1
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-red-500 hover:bg-red-50"
-                    }`}
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </div>
-            ))}
-
+        {/* Exercises Section */}
+        <h2 className="text-xl font-bold text-[#004D40] mb-4">Exercises</h2>
+        {exercises.map((exercise, index) => (
+          <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+            <input
+              type="text"
+              placeholder="Exercise Name"
+              value={exercise.name}
+              onChange={(e) => updateExercise(index, "name", e.target.value)}
+              className="p-2 border border-gray-300 rounded-lg"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Sets"
+              value={exercise.sets}
+              onChange={(e) => updateExercise(index, "sets", e.target.value)}
+              className="p-2 border border-gray-300 rounded-lg"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Reps"
+              value={exercise.reps}
+              onChange={(e) => updateExercise(index, "reps", e.target.value)}
+              className="p-2 border border-gray-300 rounded-lg"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Weight"
+              value={exercise.weight}
+              onChange={(e) => updateExercise(index, "weight", e.target.value)}
+              className="p-2 border border-gray-300 rounded-lg"
+              required
+            />
             <button
               type="button"
-              onClick={addExercise}
-              className="w-full border border-dashed border-gray-300 text-gray-600 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+              onClick={() => removeExercise(index)}
+              className="text-red-500 hover:text-red-700"
             >
-              <FaPlus /> Add Exercise
+              <FaTrash />
             </button>
           </div>
-        </div>
+        ))}
 
+        <button
+          type="button"
+          onClick={addExercise}
+          className="flex items-center gap-2 text-[#28A745] hover:text-[#218838] mb-6"
+        >
+          <FaPlus /> Add Exercise
+        </button>
+
+        {/* Submit Buttons */}
         <div className="flex justify-end gap-4">
           <button
             type="button"
@@ -205,7 +244,7 @@ const CreateWorkoutPlan = ({ onBack }) => {
         </div>
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default CreateWorkoutPlan
+export default CreateWorkoutPlan;
