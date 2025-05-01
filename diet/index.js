@@ -7,9 +7,10 @@ require("dotenv").config();
 
 const userModel = require("./models/userModel");
 const foodModel = require("./models/foodModel");
+const foodDiaryModel = require("./models/foodDiaryModel");
 const verifyToken = require("./models/verifyToken"); // Keep token verification
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/diet")
@@ -175,54 +176,83 @@ app.post("/update-allergy", verifyToken, async (req, res) => {
   }
 });
 
-  //endpoint to search food by name
-   
-  app.get("/foods/:name",async(req,res)=>{
+app.get("/foods/:name", async (req, res) => {
+  try {
+    const allFoods = await foodModel.find({});
+    const searchTerm = req.params.name.toLowerCase();
 
-    try{
-     let foods = await foodModel.find({name:{$regex:req.params.name,$options:'i'}})
-     if(foods.length!==0)
-     {
-      res.send(foods);
-     }else{
-      res.status(404).send({message:"Food Item Not Found"})
-     }
+    function fuzzyMatch(food, search) {
+      const foodName = food.name.toLowerCase();
+      if (foodName === search) return 1;
+      if (foodName.includes(search)) return 0.8;
+
+      let searchIndex = 0;
+      for (let i = 0; i < foodName.length && searchIndex < search.length; i++) {
+        if (foodName[i] === search[searchIndex]) {
+          searchIndex++;
+        }
+      }
+      if (searchIndex === search.length) return 0.6;
+
+      let matchCount = 0;
+      for (let i = 0; i < search.length; i++) {
+        if (foodName.includes(search[i])) {
+          matchCount++;
+        }
+      }
+
+      const matchRatio = matchCount / search.length;
+      if (matchRatio >= 0.5) return matchRatio * 0.5;
+
+      return 0;
     }
-    catch(err){
-      console.log(err);
-      res.status(500).send({message:"Some Problem in getting the food"})
+
+    const results = allFoods
+      .map(food => ({
+        food,
+        score: fuzzyMatch(food, searchTerm)
+      }))
+      .filter(item => item.score > 0.2)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.food);
+
+    if (results.length !== 0) {
+      res.send(results);
+    } else {
+      res.status(404).send({ message: "Food Item Not Found" });
     }
-
-  })
-
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ message: "Some Problem in getting the food" });
+  }
 });
 
-/**
- * @route POST /add-food
- * @desc Add a new food item to the database
- */
 app.post("/add-food", async (req, res) => {
   try {
-    const { name, calories, protein, carbs, fats } = req.body;
+    const { name, calories, protein, carbs, fats, category, userId } = req.body;
 
-    if (!name || !calories) {
-      return res.status(400).send({ message: "Name and calories are required fields" });
+    if (!name || !calories || !category || !userId) {
+      return res.status(400).send({ message: "Name, calories, category, and userId are required fields" });
     }
 
-    const existingFood = await foodModel.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+    const validCategories = ["Breakfast", "Lunch", "Dinner", "Snacks"];
+    if (!validCategories.includes(category)) {
+      return res.status(400).send({ message: "Invalid category. Must be one of: Breakfast, Lunch, Dinner, Snacks" });
+    }
+
+    const existingFood = await Food.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') }, userId });
     if (existingFood) {
-      return res.status(409).send({ message: "Food item with this name already exists" });
+      return res.status(409).send({ message: "Food item with this name already exists for this user" });
     }
 
-    const newFood = new foodModel({
+    const newFood = new Food({
       name,
       calories,
       protein: protein || 0,
       carbs: carbs || 0,
-      fats: fats || 0
+      fats: fats || 0,
+      category,
+      userId
     });
 
     const savedFood = await newFood.save();
@@ -235,4 +265,63 @@ app.post("/add-food", async (req, res) => {
     console.error(err);
     res.status(500).send({ message: "Error adding food item" });
   }
+});
+
+app.post("/food-diary", async (req, res) => {
+  console.log("brooo")
+  try {
+    const { userId, name, calories, protein, carbs, fats, mealType, date } = req.body;
+    
+    // Validate required fields
+    if (!userId || !name || !calories || !mealType || !date) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    
+    // Create a new food diary entry
+    const newEntry = new foodDiaryModel({
+      userId,
+      name,
+      calories,
+      protein: protein || 0, // Default to 0 if not provided
+      carbs: carbs || 0, // Default to 0 if not provided
+      fats: fats || 0, // Default to 0 if not provided
+      mealType,
+      date
+    });
+    
+    // Save the new entry
+    const savedEntry = await newEntry.save();
+    
+    res.status(201).json(savedEntry);
+  } catch (err) {
+    console.error("Error saving food diary entry:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.get("/food-diary", async (req, res) => {
+  console.log("GET /food-diary called");
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ message: "Missing userId in query" });
+    }
+
+    const entries = await foodDiaryModel.find({ userId });
+
+    if (!entries.length) {
+      return res.status(404).json({ message: "No entries found for this user" });
+    }
+
+    res.json(entries);
+  } catch (err) {
+    console.error("Error fetching food diary:", err);
+    res.status(500).json({ message: "Failed to fetch food diary" });
+  }
+});
+
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
