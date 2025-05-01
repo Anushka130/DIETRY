@@ -1,44 +1,37 @@
 /* eslint-disable react/prop-types */
-import "./App.css";
-import { BrowserRouter,Routes, Route, Navigate, useLocation, Router,
-} from "react-router-dom";
-import Register from "./components/Register";
-import Login from "./components/Login";
-import Track from "./components/Track";
-import { useState, useEffect } from "react";
-import Private from "./components/Private";
-import { UserContext } from "./contexts/UserContext";
-import UserDetails from "./components/UserDetails";
-import AllergySelection from "./components/AllergySelection"; // Import allergy page
-import Home from "./components/Home";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import Sidebar from "./components/sidebar/Sidebar";
-import Dashboard from "./components/Dashboard/Dashboard";
+"use client"
 
+import "./App.css"
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
-
+import Register from "./components/Register"
+import Login from "./components/Login"
+import Private from "./components/Private"
+import { UserContext } from "./contexts/UserContext"
+import UserDetails from "./components/UserDetails"
+import AllergySelection from "./components/AllergySelection"
+import Home from "./components/Home"
+import MainLayout from "./components/layouts/MainLayout"
+import Dashboard from "./components/Dashboard/Dashboard"
+import FoodDiary from "./components/Food/FoodDiary"
+import Workout from "./components/Workout/Workout"
+import WorkoutPlanDetail from "./components/Workout/WorkoutPlanDetail"
+import CreateWorkoutPlan from "./components/Workout/CreateWorkoutPlan"
+import User from "./components/User"
+import WorkoutHistory from "./components/Workout/WorkoutHistory"
 
 function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen)
-  }
-
-  const [loggedUser, setLoggedUser] = useState(
-    JSON.parse(sessionStorage.getItem("diet-user"))
-
-    
-  );
+  const [loggedUser, setLoggedUser] = useState(JSON.parse(sessionStorage.getItem("diet-user")))
 
   return (
     <UserContext.Provider value={{ loggedUser, setLoggedUser }}>
       <BrowserRouter>
-        {/* Improved Toast Notification Settings */}
         <ToastContainer
           position="top-center"
-          autoClose={1000} // 1 second
+          autoClose={2000}
           hideProgressBar={false}
           newestOnTop={true}
           closeOnClick
@@ -48,18 +41,15 @@ function App() {
           pauseOnHover={false}
           theme="colored"
         />
-        <AppRoutes loggedUser={loggedUser} 
-        setLoggedUser={setLoggedUser}
-        isSidebarOpen={isSidebarOpen}
-        toggleSidebar={toggleSidebar} />
+        <AppRoutes loggedUser={loggedUser} />
       </BrowserRouter>
     </UserContext.Provider>
-  );
+  )
 }
 
-// Moved routing logic into a separate component
-function AppRoutes({ loggedUser, isSidebarOpen, toggleSidebar }) {
-  const location = useLocation();
+function AppRoutes({ loggedUser }) {
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const hasDetails =
     loggedUser &&
@@ -67,68 +57,87 @@ function AppRoutes({ loggedUser, isSidebarOpen, toggleSidebar }) {
     loggedUser.weight &&
     loggedUser.gender &&
     loggedUser.activityLevel &&
-    loggedUser.goal;
+    loggedUser.goal
 
-  const hasAllergyInfo = loggedUser && loggedUser.hasAllergyInfo;
+  const hasAllergyInfo = loggedUser && loggedUser.hasAllergyInfo
 
   useEffect(() => {
     if (loggedUser) {
       if (!hasDetails && location.pathname !== "/details") {
-        window.location.href = "/details";
-      } else if (
-        hasDetails &&
-        !hasAllergyInfo &&
-        location.pathname !== "/allergy-selection"
-      ) {
-        window.location.href = "/allergy-selection";
+        navigate("/details")
+      } else if (hasDetails && !hasAllergyInfo && location.pathname !== "/allergy-selection") {
+        navigate("/allergy-selection")
       }
     }
-  }, [loggedUser, hasDetails, hasAllergyInfo, location.pathname]);
+  }, [loggedUser, hasDetails, hasAllergyInfo, location.pathname, navigate])
 
-  const isDashboardRoute = ["/dashboard", "/track"].includes(location.pathname)&& loggedUser
+  // Check if the current route should display the main layout
+  const mainLayoutRoutes = [
+    "/dashboard",
+    "/track",
+    "/food/diary",
+    "/food/breakfast",
+    "/food/lunch",
+    "/food/dinner",
+    "/food/snacks",
+    "/food/water",
+    "/nutrition",
+    "/workout",
+    "/workout/create",
+    "/workout/history",
+    "/profile",
+  ]
 
-  if(isDashboardRoute) {
+  const shouldShowMainLayout =
+    mainLayoutRoutes.some(
+      (route) =>
+        location.pathname.startsWith(route) ||
+        (location.pathname.includes("/workout/") && !location.pathname.includes("/create")),
+    ) && loggedUser
+
+  if (shouldShowMainLayout) {
     return (
-      <div className="flex h-screen bg-gray-50">
-        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-        <div className={`flex-1 ${isSidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>
-          <Routes>
-            <Route
-              path="/dashboard"
-              element={<Private Component={() => <Dashboard isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />} />}
-            />
-            <Route path="/track" element={hasDetails ? <Private Component={Track} /> : <Navigate to="/details" />} />
-          </Routes>
-        </div>
-      </div>
+      <MainLayout>
+        <Routes>
+          {/* Dashboard and Track */}
+          <Route path="/dashboard" element={<Private Component={Dashboard} />} />
+          <Route path="/track" element={hasDetails ? <Private Component={Dashboard} /> : <Navigate to="/details" />} />
+          <Route path="/overview" element={<Navigate to="/dashboard" replace />} />
+
+          {/* Food */}
+          <Route path="/food/diary" element={<Private Component={FoodDiary} />} />
+          <Route path="/food/breakfast" element={<Private Component={FoodDiary} />} />
+          <Route path="/food/lunch" element={<Private Component={FoodDiary} />} />
+          <Route path="/food/dinner" element={<Private Component={FoodDiary} />} />
+          <Route path="/food/snacks" element={<Private Component={FoodDiary} />} />
+          <Route path="/food/water" element={<Private Component={FoodDiary} />} />
+          <Route path="/nutrition" element={<Navigate to="/food/diary" replace />} />
+
+          {/* Workout Routes */}
+          <Route path="/workout" element={<Private Component={Workout} />} />
+          <Route path="/workout/create" element={<Private Component={CreateWorkoutPlan} />} />
+          <Route path="/workout/:id" element={<Private Component={WorkoutPlanDetail} />} />
+          <Route path="/workout/history" element={<Private Component={WorkoutHistory} />} />
+
+          {/* Profile */}
+          <Route path="/profile" element={<Private Component={User} />} />
+        </Routes>
+      </MainLayout>
     )
   }
 
-
+  // Public routes (without MainLayout)
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
-      <Route
-        path="/track"
-        element={
-          hasDetails ? (
-            <Private Component={Track} />
-          ) : (
-            <Navigate to="/details" />
-          )
-        }
-      />
-      <Route path="/track" element={<Track />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/details" element={<UserDetails />} />
       <Route path="/allergy-selection" element={<AllergySelection />} />
       <Route path="/home" element={<Home />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    
-
-
-  );
+  )
 }
 
-export default App;
+export default App
