@@ -18,7 +18,7 @@ const verifyToken = (req, res, next) => {
     const token = tokenParts[1]; // Extract token
     console.log("✅ Extracted Token:", token);
 
-    jwt.verify(token, "diet", (err, decoded) => {  // Ensure the secret key matches login
+    jwt.verify(token, "diet", (err, decoded) => {  
         if (err) {
             console.log("❌ JWT Verification Error:", err);
             if (err.name === "TokenExpiredError") {

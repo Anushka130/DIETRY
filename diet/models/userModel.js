@@ -10,11 +10,10 @@ const userSchema = new mongoose.Schema({
   gender: { type: String, required: false, enum: ["male", "female", "other"] },
   activityLevel: { type: String, required: false, enum: ["sedentary", "light", "moderate", "active"] },
   goal: { type: String, required: false, enum: ["lose_weight", "maintain", "gain_muscle"] },
-  allergy: { type: String, required: false }, // Optional allergy
-  hasAllergyInfo: { type: Boolean, default: false }, // Tracks if allergy info was entered
+  allergy: { type: String, required: false },
+  hasAllergyInfo: { type: Boolean, default: false }, 
 });
 
-// Virtual property to check if user details are complete
 userSchema.virtual("hasDetails").get(function () {
   return this.height != null &&
          this.weight != null &&

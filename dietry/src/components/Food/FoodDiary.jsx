@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { FaCoffee, FaUtensils, FaCarrot, FaCookieBite, FaPlus } from 'react-icons/fa';
+import { FaCoffee, FaUtensils, FaCarrot, FaCookieBite, FaPlus, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import axios from 'axios';
 import { UserContext } from '../../contexts/UserContext';
 import { toast } from 'react-toastify';
@@ -20,6 +20,7 @@ const FoodDiary = () => {
   
   const { loggedUser } = useContext(UserContext);
   const API_URL = "http://localhost:3000";
+  const token = loggedUser?.token || JSON.parse(sessionStorage.getItem("diet-user"))?.token;
 
   const formattedDate = currentDate.toLocaleDateString("en-US", {
     weekday: "long",
@@ -28,25 +29,29 @@ const FoodDiary = () => {
     day: "numeric",
   });
 
-  const userID = loggedUser ? loggedUser.name : null;
+  const dateString = currentDate.toISOString().split('T')[0];
+
+  useEffect(() => {
+    fetchFoodEntries();
+  }, [currentDate, loggedUser]);
 
   const fetchFoodEntries = async () => {
+    if (!loggedUser) {
+      setError("Please log in to view your food diary.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
-    if (!userID) {
-      setError("Missing required parameter: userID.");
-      setLoading(false);
-      return;
-    }
-  
     try {
-      const response = await axios.get(`${API_URL}/food-diary`, {
-        params: { userId: userID }
+      const response = await axios.get(`${API_URL}/food/diary/${dateString}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
   
       if (response.data.length === 0) {
-        setError("No food diary entries found.");
         setMeals({
           Breakfast: [],
           Lunch: [],
@@ -64,8 +69,17 @@ const FoodDiary = () => {
       };
   
       response.data.forEach(entry => {
-        if (mealData[entry.mealType]) {
-          mealData[entry.mealType].push(entry);
+        if (mealData[entry.category]) {
+          const foodItem = {
+            _id: entry.food._id,
+            name: entry.food.name,
+            calories: entry.food.calories * entry.quantity,
+            protein: entry.food.protein * entry.quantity,
+            carbs: entry.food.carbs * entry.quantity,
+            fats: entry.food.fats * entry.quantity,
+            quantity: entry.quantity
+          };
+          mealData[entry.category].push(foodItem);
         }
       });
   
@@ -78,14 +92,12 @@ const FoodDiary = () => {
     }
   };
   
-  // Navigate to previous day
   const goToPreviousDay = () => {
     const prevDay = new Date(currentDate);
     prevDay.setDate(prevDay.getDate() - 1);
     setCurrentDate(prevDay);
   };
 
-  // Navigate to next day
   const goToNextDay = () => {
     const nextDay = new Date(currentDate);
     nextDay.setDate(nextDay.getDate() + 1);
@@ -99,24 +111,35 @@ const FoodDiary = () => {
 
   const handleAddFoodToDiary = async (foodItem) => {
     try {
-      const diaryEntry = {
-        userId: userID,
-        name: foodItem.name,
-        calories: foodItem.calories,
-        protein: foodItem.protein || 0,
-        carbs: foodItem.carbs || 0,
-        fats: foodItem.fats || 0,
-        category: foodItem.category || selectedMeal,
-      };
+      await axios.post(`${API_URL}/food/diary`, {
+        foodId: foodItem._id,
+        date: dateString,
+        category: selectedMeal,
+        quantity: 1
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setMeals(prevMeals => {
+        const updatedMeals = {...prevMeals};
+        const newFood = {
+          _id: foodItem._id,
+          name: foodItem.name,
+          calories: foodItem.calories,
+          protein: foodItem.protein || 0,
+          carbs: foodItem.carbs || 0,
+          fats: foodItem.fats || 0,
+          quantity: 1
+        };
+        updatedMeals[selectedMeal] = [...updatedMeals[selectedMeal], newFood];
+        return updatedMeals;
+      });
   
-      const response = await axios.post(`${API_URL}/food-diary`, diaryEntry);
-  
-      setMeals(prevMeals => ({
-        ...prevMeals,
-        [foodItem.category || selectedMeal]: [...prevMeals[foodItem.category || selectedMeal], response.data]
-      }));
-  
-      toast.success(`Added ${foodItem.name} to ${foodItem.category || selectedMeal}`);
+      toast.success(`Added ${foodItem.name} to ${selectedMeal}`);
+      
+      setShowAddFood(false);
     } catch (err) {
       console.error("Error adding food to diary:", err);
       setError(err.response?.data?.message || "Failed to add food to diary");
@@ -130,7 +153,7 @@ const FoodDiary = () => {
         calories: totals.calories + (item.calories || 0),
         protein: totals.protein + (item.protein || 0),
         carbs: totals.carbs + (item.carbs || 0),
-        fats: totals.fats + (item.fats || 0)
+        fats: totals.fats + (item.fats || 0),
       };
     }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
   };
@@ -147,224 +170,108 @@ const FoodDiary = () => {
     { name: "Snacks", icon: <FaCookieBite className="text-green-600" /> },
   ];
 
-  const calculateNutritionalGoals = () => {
-    if (!loggedUser) return {
-      calories: { total: 2000, unit: "kcal" },
-      carbs: { total: 250, unit: "g" },
-      fat: { total: 70, unit: "g" },
-      protein: { total: 100, unit: "g" }
-    };
-    
-    let bmr = 0;
-    const weight = loggedUser.weight; // in kg
-    const height = loggedUser.height; // in cm
-    const age = loggedUser.age || 30; // default to 30 if not specified
-    
-    if (loggedUser.gender.toLowerCase() === 'male') {
-      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-    } else {
-      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
-    }
-    
-    const activityMultipliers = {
-      'sedentary': 1.2,
-      'lightly active': 1.375,
-      'moderately active': 1.55,
-      'very active': 1.725,
-      'extra active': 1.9
-    };
-    
-    const multiplier = activityMultipliers[loggedUser.activityLevel.toLowerCase()] || 1.375;
-    let tdee = bmr * multiplier;
-    
-    switch(loggedUser.goal.toLowerCase()) {
-      case 'lose weight':
-        tdee -= 500; // Caloric deficit
-        break;
-      case 'gain weight':
-      case 'build muscle':
-        tdee += 300; // Caloric surplus
-        break;
-      default: // Maintain weight
-        break;
-    }
-    
-    const protein = Math.round(weight * 1.6); // 1.6g per kg body weight
-    const fat = Math.round(tdee * 0.3 / 9); // 30% of calories from fat
-    const carbs = Math.round((tdee - (protein * 4) - (fat * 9)) / 4); // Remaining calories from carbs
-    
-    return {
-      calories: { total: Math.round(tdee), unit: "kcal" },
-      carbs: { total: carbs, unit: "g" },
-      fat: { total: fat, unit: "g" },
-      protein: { total: protein, unit: "g" }
-    };
-  };
-  
-  const nutritionalGoals = calculateNutritionalGoals();
   const dailyTotals = calculateDailyTotals();
-  const remaining = {
-    calories: nutritionalGoals.calories.total - dailyTotals.calories,
-    carbs: nutritionalGoals.carbs.total - dailyTotals.carbs,
-    fat: nutritionalGoals.fat.total - dailyTotals.fats,
-    protein: nutritionalGoals.protein.total - dailyTotals.protein
-  };
 
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <h1 className="text-xl font-bold text-teal-800 mb-4">Food Diary</h1>
 
+        <div className="flex justify-between items-center mb-6">
+          <button onClick={goToPreviousDay} className="text-teal-600 hover:text-teal-800">
+            <FaChevronLeft />
+          </button>
+          <h2 className="text-lg font-medium">{formattedDate}</h2>
+          <button onClick={goToNextDay} className="text-teal-600 hover:text-teal-800">
+            <FaChevronRight />
+          </button>
+        </div>
+
         {loading ? (
-          <div className="text-center py-4">Loading your food diary...</div>
+          <div className="text-center py-4">Loading...</div>
         ) : error ? (
           <div className="text-center py-4 text-red-500">{error}</div>
         ) : (
           <>
-            {/* Nutritional Headers */}
-            <div className="grid grid-cols-6 gap-2 mb-2 text-center font-medium text-sm">
-              <div className="col-span-2"></div>
-              <div className="bg-teal-800 text-white p-2 rounded-t-md">
-                <div>Calories</div>
-                <div className="text-xs">kcal</div>
-              </div>
-              <div className="bg-teal-800 text-white p-2 rounded-t-md">
-                <div>Carbs</div>
-                <div className="text-xs">g</div>
-              </div>
-              <div className="bg-teal-800 text-white p-2 rounded-t-md">
-                <div>Fat</div>
-                <div className="text-xs">g</div>
-              </div>
-              <div className="bg-teal-800 text-white p-2 rounded-t-md">
-                <div>Protein</div>
-                <div className="text-xs">g</div>
-              </div>
+            <div className="grid grid-cols-12 gap-2 mb-4 text-center font-medium text-sm bg-gray-100 p-2 rounded">
+              <div className="col-span-4">Daily Summary</div>
+              <div className="col-span-2">Calories</div>
+              <div className="col-span-2">Protein</div>
+              <div className="col-span-2">Carbs</div>
+              <div className="col-span-2">Fats</div>
+            </div>
+            
+            <div className="grid grid-cols-12 gap-2 mb-4 text-center text-sm border-b pb-2">
+              <div className="col-span-4 font-medium">Total</div>
+              <div className="col-span-2">{Math.round(dailyTotals.calories)} kcal</div>
+              <div className="col-span-2">{Math.round(dailyTotals.protein || 0)} g</div>
+              <div className="col-span-2">{Math.round(dailyTotals.carbs || 0)} g</div>
+              <div className="col-span-2">{Math.round(dailyTotals.fats || 0)} g</div>
             </div>
 
-            {/* Meal Sections */}
             {mealSections.map((meal, index) => {
               const mealItems = meals[meal.name] || [];
               const mealTotals = calculateMealTotals(mealItems);
               
               return (
-                <div key={index} className="mb-4">
-                  <div className="flex items-center mb-2">
-                    <div className="mr-2">{meal.icon}</div>
-                    <h2 className="text-lg font-semibold text-teal-800">{meal.name}</h2>
-                  </div>
-
-                  <div className="flex mb-2">
+                <div key={index} className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <div className="mr-2">{meal.icon}</div>
+                      <h2 className="text-lg font-semibold text-teal-800">{meal.name}</h2>
+                    </div>
                     <button
-                      className="flex items-center text-green-600 hover:underline"
+                      className="flex items-center text-green-600 hover:text-green-800"
                       onClick={() => handleAddFood(meal.name)}
                     >
                       <FaPlus className="mr-1" /> Add Food
                     </button>
                   </div>
 
-                  {/* Food Items for this meal */}
                   {mealItems.length > 0 ? (
                     <div className="mb-2">
+                      <div className="grid grid-cols-12 gap-2 text-sm font-medium border-b py-1 bg-gray-50">
+                        <div className="col-span-4">Food</div>
+                        <div className="col-span-2 text-center">Calories</div>
+                        <div className="col-span-2 text-center">Protein</div>
+                        <div className="col-span-2 text-center">Carbs</div>
+                        <div className="col-span-2 text-center">Fats</div>
+                      </div>
                       {mealItems.map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-6 gap-2 text-sm border-b py-2">
-                          <div className="col-span-2">
-                            <div className="font-medium">{item.name}</div>
-                          </div>
-                          <div className="text-center">{Math.round(item.calories || 0)}</div>
-                          <div className="text-center">{Math.round(item.carbs || 0)}</div>
-                          <div className="text-center">{Math.round(item.fats || 0)}</div>
-                          <div className="text-center">{Math.round(item.protein || 0)}</div>
+                        <div key={idx} className="grid grid-cols-12 gap-2 text-sm border-b py-2">
+                          <div className="col-span-4">{item.name}</div>
+                          <div className="col-span-2 text-center">{Math.round(item.calories || 0)}</div>
+                          <div className="col-span-2 text-center">{Math.round(item.protein || 0)} g</div>
+                          <div className="col-span-2 text-center">{Math.round(item.carbs || 0)} g</div>
+                          <div className="col-span-2 text-center">{Math.round(item.fats || 0)} g</div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-6 gap-2 text-center text-gray-500 text-sm">
-                      <div className="col-span-2">No entries yet</div>
-                      <div className="p-2">0</div>
-                      <div className="p-2">0</div>
-                      <div className="p-2">0</div>
-                      <div className="p-2">0</div>
+                    <div className="text-center text-gray-500 text-sm py-4 bg-gray-50 rounded">
+                      No entries yet for {meal.name}
                     </div>
                   )}
 
-                  {/* Meal totals */}
                   {mealItems.length > 0 && (
-                    <div className="grid grid-cols-6 gap-2 text-center font-medium text-sm bg-gray-100 py-1">
-                      <div className="col-span-2 text-right">Total {meal.name}</div>
-                      <div>{Math.round(mealTotals.calories)}</div>
-                      <div>{Math.round(mealTotals.carbs)}</div>
-                      <div>{Math.round(mealTotals.fats)}</div>
-                      <div>{Math.round(mealTotals.protein)}</div>
+                    <div className="grid grid-cols-12 gap-2 text-center font-medium text-sm bg-gray-100 py-1 rounded">
+                      <div className="col-span-4 text-right">Total {meal.name}</div>
+                      <div className="col-span-2">{Math.round(mealTotals.calories)} kcal</div>
+                      <div className="col-span-2">{Math.round(mealTotals.protein)} g</div>
+                      <div className="col-span-2">{Math.round(mealTotals.carbs)} g</div>
+                      <div className="col-span-2">{Math.round(mealTotals.fats)} g</div>
                     </div>
                   )}
                 </div>
               );
             })}
 
-            {/* Totals and Goals */}
-            <div className="mt-6 border-t pt-4">
-              <div className="grid grid-cols-6 gap-2 text-center font-medium">
-                <div className="col-span-2 text-right">Daily Totals</div>
-                <div>{Math.round(dailyTotals.calories)}</div>
-                <div>{Math.round(dailyTotals.carbs)}</div>
-                <div>{Math.round(dailyTotals.fats)}</div>
-                <div>{Math.round(dailyTotals.protein)}</div>
-              </div>
-
-              <div className="grid grid-cols-6 gap-2 text-center font-medium mt-2">
-                <div className="col-span-2 text-right">Your Daily Goal</div>
-                <div className="text-green-600">{nutritionalGoals.calories.total}</div>
-                <div className="text-green-600">{nutritionalGoals.carbs.total}</div>
-                <div className="text-green-600">{nutritionalGoals.fat.total}</div>
-                <div className="text-green-600">{nutritionalGoals.protein.total}</div>
-              </div>
-
-              <div className="grid grid-cols-6 gap-2 text-center font-medium mt-2">
-                <div className="col-span-2 text-right">Remaining</div>
-                <div className={remaining.calories < 0 ? "text-red-500" : "text-green-600"}>
-                  {Math.round(remaining.calories)}
-                </div>
-                <div className={remaining.carbs < 0 ? "text-red-500" : "text-green-600"}>
-                  {Math.round(remaining.carbs)}
-                </div>
-                <div className={remaining.fat < 0 ? "text-red-500" : "text-green-600"}>
-                  {Math.round(remaining.fat)}
-                </div>
-                <div className={remaining.protein < 0 ? "text-red-500" : "text-green-600"}>
-                  {Math.round(remaining.protein)}
-                </div>
-              </div>
-            </div>
-
-            {/* Complete Entry Button */}
             <div className="mt-6 text-center">
               <button 
-                onClick={() => toast.success("Entry completed! Your progress has been saved.")}
+                onClick={() => toast.success("Food diary updated successfully!")}
                 className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md">
-                Complete This Entry
+                Complete Entry
               </button>
-            </div>
-
-            {/* Water Consumption */}
-            <div className="mt-6 border-t pt-4">
-              <h3 className="text-lg font-semibold text-teal-800">Water Consumption</h3>
-              <div className="flex items-center mt-2">
-                <div className="flex space-x-2">
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((glass) => (
-                    <button 
-                      key={glass}
-                      onClick={() => toast.info(`${glass} glasses of water logged`)}
-                      className="w-8 h-12 bg-blue-100 hover:bg-blue-200 rounded-md flex items-center justify-center"
-                    >
-                      <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19V5M5 12h14"></path>
-                      </svg>
-                    </button>
-                  ))}
-                </div>
-                <div className="ml-4 text-gray-600">0 / 8 glasses</div>
-              </div>
             </div>
           </>
         )}
@@ -372,7 +279,6 @@ const FoodDiary = () => {
 
       {showAddFood && (
         <AddFoodItem 
-          userId={userID}
           mealType={selectedMeal}
           onAddFood={handleAddFoodToDiary}
           onClose={() => setShowAddFood(false)}
