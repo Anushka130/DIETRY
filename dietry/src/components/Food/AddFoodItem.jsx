@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { FaSearch, FaTimes, FaPlus } from "react-icons/fa"
 import axios from "axios"
 
-const AddFoodItem = ({ onClose, mealType, onAddFood }) => {
+const AddFoodItem = ({ userId, onClose, mealType, onAddFood }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -53,8 +53,7 @@ const AddFoodItem = ({ onClose, mealType, onAddFood }) => {
     
     const foodToAdd = {
       ...food,
-      mealType: mealType,
-      date: new Date().toISOString().split('T')[0]
+      mealType: mealType
     };
     
     onAddFood(foodToAdd);
@@ -257,3 +256,5 @@ const AddFoodItem = ({ onClose, mealType, onAddFood }) => {
     </div>
   );
 };
+
+export default AddFoodItem;

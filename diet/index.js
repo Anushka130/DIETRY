@@ -7,7 +7,6 @@ require("dotenv").config();
 
 const userModel = require("./models/userModel");
 const foodModel = require("./models/foodModel");
-const foodDiaryModel = require("./models/foodDiaryModel");
 const verifyToken = require("./models/verifyToken"); // Keep token verification
 
 const PORT = process.env.PORT || 3000;
@@ -177,6 +176,7 @@ app.post("/update-allergy", verifyToken, async (req, res) => {
 });
 
 app.get("/foods/:name", async (req, res) => {
+  console.log("search called")
   try {
     const allFoods = await foodModel.find({});
     const searchTerm = req.params.name.toLowerCase();
@@ -228,6 +228,7 @@ app.get("/foods/:name", async (req, res) => {
 });
 
 app.post("/add-food", async (req, res) => {
+  console.log("addd called")
   try {
     const { name, calories, protein, carbs, fats, category, userId } = req.body;
 
@@ -240,7 +241,7 @@ app.post("/add-food", async (req, res) => {
       return res.status(400).send({ message: "Invalid category. Must be one of: Breakfast, Lunch, Dinner, Snacks" });
     }
 
-    const existingFood = await Food.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') }, userId });
+    const existingFood = await foodModel.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') }, userId });
     if (existingFood) {
       return res.status(409).send({ message: "Food item with this name already exists for this user" });
     }
@@ -268,33 +269,38 @@ app.post("/add-food", async (req, res) => {
 });
 
 app.post("/food-diary", async (req, res) => {
-  console.log("brooo")
+  console.log("added food")
   try {
-    const { userId, name, calories, protein, carbs, fats, mealType, date } = req.body;
-    
-    // Validate required fields
-    if (!userId || !name || !calories || !mealType || !date) {
+    const { userId, name, calories, protein, carbs, fats, category } = req.body;
+
+    // Check required fields
+    if (!userId || !name || !calories || !category) {
       return res.status(400).json({ message: "Missing required fields" });
     }
-    
-    // Create a new food diary entry
-    const newEntry = new foodDiaryModel({
+
+    const validCategories = ["Breakfast", "Lunch", "Dinner", "Snacks"];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ message: "Invalid category" });
+    }
+
+    const newDiaryEntry = new foodModel({
       userId,
       name,
       calories,
-      protein: protein || 0, // Default to 0 if not provided
-      carbs: carbs || 0, // Default to 0 if not provided
-      fats: fats || 0, // Default to 0 if not provided
-      mealType,
-      date
+      protein: protein || 0,
+      carbs: carbs || 0,
+      fats: fats || 0,
+      category
     });
-    
-    // Save the new entry
-    const savedEntry = await newEntry.save();
-    
-    res.status(201).json(savedEntry);
+
+    const savedEntry = await newDiaryEntry.save();
+
+    res.status(201).json({
+      message: "Food diary entry saved successfully ✅",
+      entry: savedEntry
+    });
   } catch (err) {
-    console.error("Error saving food diary entry:", err);
+    console.error("Error saving food entry:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -308,7 +314,7 @@ app.get("/food-diary", async (req, res) => {
       return res.status(400).json({ message: "Missing userId in query" });
     }
 
-    const entries = await foodDiaryModel.find({ userId });
+    const entries = await foodModel.find({ userId });
 
     if (!entries.length) {
       return res.status(404).json({ message: "No entries found for this user" });
