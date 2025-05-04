@@ -163,6 +163,9 @@ const FoodDiary = () => {
         },
       )
 
+      // Set flag to refresh dashboard data
+      sessionStorage.setItem("dashboard_refresh_needed", "true")
+
       setMeals((prevMeals) => {
         const updatedMeals = { ...prevMeals }
         const newFood = {
@@ -229,6 +232,9 @@ const FoodDiary = () => {
           Authorization: `Bearer ${token}`,
         },
       })
+
+      // Set flag to refresh dashboard data
+      sessionStorage.setItem("dashboard_refresh_needed", "true")
 
       toast.success("Food item deleted successfully")
       fetchFoodEntries()

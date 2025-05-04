@@ -91,6 +91,15 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchAllData()
+
+    // Check if we need to refresh data (e.g., after completing a workout)
+    const refreshNeeded = sessionStorage.getItem("dashboard_refresh_needed")
+    if (refreshNeeded === "true") {
+      // Clear the flag
+      sessionStorage.removeItem("dashboard_refresh_needed")
+      // Refresh data again to ensure we have the latest
+      fetchAllData()
+    }
   }, [currentDate])
 
   const fetchAllData = async () => {
@@ -178,6 +187,9 @@ const Dashboard = () => {
         duration: Number.parseInt(newActivity.duration),
         calories,
       })
+
+      // Set flag to refresh dashboard data
+      sessionStorage.setItem("dashboard_refresh_needed", "true")
 
       toast.success("Activity added successfully!")
       setNewActivity({ activity: "", duration: "" })

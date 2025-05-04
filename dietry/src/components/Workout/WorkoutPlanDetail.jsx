@@ -106,6 +106,9 @@ const WorkoutPlanDetail = ({ plan: propsPlan, onBack }) => {
         duration: Number.parseInt(plan.duration) || 45,
       })
 
+      // Set a flag to refresh dashboard data
+      sessionStorage.setItem("dashboard_refresh_needed", "true")
+
       toast.success("Workout Saved Successfully!")
       navigate("/dashboard")
     } catch (error) {

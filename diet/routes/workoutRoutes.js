@@ -1,7 +1,7 @@
 const express = require("express")
 const router = express.Router()
 const workoutController = require("../controllers/workoutController")
-const verifyToken = require("../auth/verifyToken") // Changed from "../verifyToken" to "../auth/verifyToken"
+const verifyToken = require("../auth/verifyToken")
 
 // All routes are protected with verifyToken
 router.post("/", verifyToken, workoutController.createWorkoutPlan)

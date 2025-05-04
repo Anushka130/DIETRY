@@ -75,6 +75,9 @@ const QuickFoodEntry = ({ onFoodAdded }) => {
       })
 
       if (response.ok) {
+        // Set flag to refresh dashboard data
+        sessionStorage.setItem("dashboard_refresh_needed", "true")
+
         toast.success(`Added ${selectedFood.name} to your diary!`)
         setSelectedFood(null)
         setSearchTerm("")
