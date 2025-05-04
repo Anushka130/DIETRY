@@ -1,13 +1,13 @@
-const express = require("express");
-const router = express.Router();
-const workoutController = require("../controllers/workoutController");
-const verifyToken = require("../verifyToken");
+const express = require("express")
+const router = express.Router()
+const workoutController = require("../controllers/workoutController")
+const verifyToken = require("../auth/verifyToken") // Changed from "../verifyToken" to "../auth/verifyToken"
 
 // All routes are protected with verifyToken
-router.post("/", verifyToken, workoutController.createWorkoutPlan);
-router.get("/", verifyToken, workoutController.getWorkoutPlans);
-router.get("/:id", verifyToken, workoutController.getWorkoutPlanById);
-router.put("/:id", verifyToken, workoutController.updateWorkoutPlan);
-router.delete("/:id", verifyToken, workoutController.deleteWorkoutPlan);
+router.post("/", verifyToken, workoutController.createWorkoutPlan)
+router.get("/", verifyToken, workoutController.getWorkoutPlans)
+router.get("/:id", verifyToken, workoutController.getWorkoutPlanById)
+router.put("/:id", verifyToken, workoutController.updateWorkoutPlan)
+router.delete("/:id", verifyToken, workoutController.deleteWorkoutPlan)
 
-module.exports = router;
+module.exports = router

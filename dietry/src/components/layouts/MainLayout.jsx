@@ -185,19 +185,7 @@ const MainLayout = ({ children }) => {
                       <span>Snacks</span>
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      to="/food/water"
-                      className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                        location.pathname === "/food/water"
-                          ? "bg-[#E8F5E9] text-[#28A745]"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <FaGlassWhiskey className="mr-3 text-[#28A745] text-sm" />
-                      <span>Water</span>
-                    </Link>
-                  </li>
+                  
                 </ul>
               )}
             </li>

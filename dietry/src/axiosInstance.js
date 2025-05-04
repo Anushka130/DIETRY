@@ -1,21 +1,21 @@
 // src/axiosInstance.js
 
-import axios from "axios";
+import axios from "axios"
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api",
-});
+  baseURL: "http://localhost:5000/api", // Changed from "http://localhost:5000/api" to match the server routes
+})
 
 // Add Authorization Header Automatically
 axiosInstance.interceptors.request.use(
   (config) => {
-    const user = JSON.parse(sessionStorage.getItem("diet-user"));
+    const user = JSON.parse(sessionStorage.getItem("diet-user"))
     if (user && user.token) {
-      config.headers.Authorization = `Bearer ${user.token}`;
+      config.headers.Authorization = `Bearer ${user.token}`
     }
-    return config;
+    return config
   },
-  (error) => Promise.reject(error)
-);
+  (error) => Promise.reject(error),
+)
 
-export default axiosInstance;
+export default axiosInstance

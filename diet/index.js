@@ -6,13 +6,13 @@ const cors = require('cors');
 require("dotenv").config()
 
 const userModel = require("./models/userModel")
-const foodModel = require("./models/foodModel")
+const verifyToken = require("./auth/verifyToken");
+const foodRoutes = require("./routes/food");
 const workoutRoutes = require("./routes/workoutRoutes");
 const workoutSessionRoutes = require("./routes/workoutSessionRoutes");
 const activityRoutes = require("./routes/activityRoutes");
 const PORT = process.env.PORT || 5000
 
-const verifyToken = require("./verifyToken.js");
 
 
 
@@ -29,6 +29,7 @@ app.use("/api/workouts", workoutRoutes);
 app.use("/api/workout-sessions", workoutSessionRoutes);
 app.use("/api/activities", activityRoutes);
 console.log("Workout session routes mounted!");
+app.use("/food", foodRoutes);
 
 /**
  * @route POST /register
@@ -94,19 +95,7 @@ app.post("/login", async (req, res) => {
   }
 })
 
-/**
- * @route GET /foods
- * @desc Get all food items (protected route)
- */
-app.get("/foods", async (req, res) => {
-  try {
-    const foods = await foodModel.find()
-    res.send(foods)
-  } catch (err) {
-    console.log(err)
-    res.status(500).send({ message: "Could not fetch food items" })
-  }
-})
+
 
 /**
  * @route POST /user-details
@@ -209,20 +198,6 @@ app.get("/user/:id", verifyToken, async (req, res) => {
   }
 })
 
-//endpoint to search food by name
-app.get("/foods/:name", async (req, res) => {
-  try {
-    const foods = await foodModel.find({ name: { $regex: req.params.name, $options: "i" } })
-    if (foods.length !== 0) {
-      res.send(foods)
-    } else {
-      res.status(404).send({ message: "Food Item Not Found" })
-    }
-  } catch (err) {
-    console.log(err)
-    res.status(500).send({ message: "Some Problem in getting the food" })
-  }
-})
 
 /**
  * @route GET /me

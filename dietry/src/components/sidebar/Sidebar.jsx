@@ -78,7 +78,7 @@ const Sidebar = () => {
                   <li><Link to="/food/lunch" className="flex items-center px-4 py-2 text-gray-600 hover:bg-[#E8F5E9] rounded-lg"><FaUtensils className="mr-3 text-[#28A745] text-sm" /><span>Lunch</span></Link></li>
                   <li><Link to="/food/dinner" className="flex items-center px-4 py-2 text-gray-600 hover:bg-[#E8F5E9] rounded-lg"><FaCarrot className="mr-3 text-[#28A745] text-sm" /><span>Dinner</span></Link></li>
                   <li><Link to="/food/snacks" className="flex items-center px-4 py-2 text-gray-600 hover:bg-[#E8F5E9] rounded-lg"><FaCookieBite className="mr-3 text-[#28A745] text-sm" /><span>Snacks</span></Link></li>
-                  <li><Link to="/food/water" className="flex items-center px-4 py-2 text-gray-600 hover:bg-[#E8F5E9] rounded-lg"><FaGlassWhiskey className="mr-3 text-[#28A745] text-sm" /><span>Water</span></Link></li>
+                  
                 </ul>
               )}
             </li>
