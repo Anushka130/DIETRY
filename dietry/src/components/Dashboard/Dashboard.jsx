@@ -72,13 +72,11 @@ const Dashboard = () => {
   const { loggedUser } = useContext(UserContext)
   const navigate = useNavigate()
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [timeRange, setTimeRange] = useState("This Week")
   const [completedSessions, setCompletedSessions] = useState([])
   const [recentActivities, setRecentActivities] = useState([])
   const [foodEntries, setFoodEntries] = useState([])
   const [newActivity, setNewActivity] = useState({ activity: "", duration: "" })
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [chartData, setChartData] = useState([])
   const [calorieData, setCalorieData] = useState({
     consumed: 0,
     burned: 0,
@@ -93,7 +91,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchAllData()
-  }, [timeRange, currentDate])
+  }, [currentDate])
 
   const fetchAllData = async () => {
     setIsLoading(true)
@@ -155,61 +153,12 @@ const Dashboard = () => {
           net: day.netCalories,
         })),
       )
-
-      // Generate workout type chart data
-      generateChartData(workoutRes.data)
     } catch (error) {
       console.error("Error fetching dashboard data:", error)
       toast.error("Failed to load dashboard data!")
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const generateChartData = (sessions) => {
-    const typeMap = {
-      Strength: 0,
-      Cardio: 0,
-      Hypertrophy: 0,
-    }
-
-    const now = new Date()
-    const filteredSessions = sessions.filter((session) => {
-      const sessionDate = new Date(session.completedAt)
-
-      if (timeRange === "This Week") {
-        const startOfWeek = new Date(now)
-        startOfWeek.setDate(now.getDate() - now.getDay())
-        return sessionDate >= startOfWeek
-      } else if (timeRange === "Last Week") {
-        const startOfLastWeek = new Date(now)
-        startOfLastWeek.setDate(now.getDate() - now.getDay() - 7)
-        const endOfLastWeek = new Date(startOfLastWeek)
-        endOfLastWeek.setDate(startOfLastWeek.getDate() + 6)
-        return sessionDate >= startOfLastWeek && sessionDate <= endOfLastWeek
-      } else if (timeRange === "This Month") {
-        return sessionDate.getMonth() === now.getMonth() && sessionDate.getFullYear() === now.getFullYear()
-      }
-      return true
-    })
-
-    filteredSessions.forEach((session) => {
-      if (session.planName.toLowerCase().includes("strength")) {
-        typeMap.Strength++
-      } else if (session.planName.toLowerCase().includes("cardio")) {
-        typeMap.Cardio++
-      } else if (session.planName.toLowerCase().includes("hypertrophy")) {
-        typeMap.Hypertrophy++
-      }
-    })
-
-    const chartArray = [
-      { name: "Strength", Workouts: typeMap.Strength },
-      { name: "Cardio", Workouts: typeMap.Cardio },
-      { name: "Hypertrophy", Workouts: typeMap.Hypertrophy },
-    ]
-
-    setChartData(chartArray)
   }
 
   const calculateCalories = (activity, duration) => {
@@ -381,8 +330,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Calorie Breakdown and Workout Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Calorie Breakdown */}
+      <div className="grid grid-cols-1 gap-6">
         {/* Calorie Breakdown Pie Chart */}
         <div className="bg-white rounded-xl shadow p-6">
           <h2 className="text-lg font-semibold text-[#004D40] mb-4">Calorie Breakdown</h2>
@@ -405,34 +354,6 @@ const Dashboard = () => {
                 </Pie>
                 <Tooltip formatter={(value) => `${value.toLocaleString()} kcal`} />
               </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Workout Distribution */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-[#004D40]">Workout Distribution</h3>
-            <select
-              className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#28A745]"
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-            >
-              <option value="This Week">This Week</option>
-              <option value="Last Week">Last Week</option>
-              <option value="This Month">This Month</option>
-            </select>
-          </div>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Workouts" fill="#28A745" animationDuration={1000} />
-              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
