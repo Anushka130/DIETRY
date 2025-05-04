@@ -22,6 +22,7 @@ import WorkoutPlanDetail from "./components/Workout/WorkoutPlanDetail"
 import CreateWorkoutPlan from "./components/Workout/CreateWorkoutPlan"
 import User from "./components/User"
 import WorkoutHistory from "./components/Workout/WorkoutHistory"
+import WeeklyReport from "./components/Reports/WeeklyReport"
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(JSON.parse(sessionStorage.getItem("diet-user")))
@@ -86,6 +87,7 @@ function AppRoutes({ loggedUser }) {
     "/workout/create",
     "/workout/history",
     "/profile",
+    "/reports",
   ]
 
   const shouldShowMainLayout =
@@ -118,6 +120,9 @@ function AppRoutes({ loggedUser }) {
           <Route path="/workout/create" element={<Private Component={CreateWorkoutPlan} />} />
           <Route path="/workout/:id" element={<Private Component={WorkoutPlanDetail} />} />
           <Route path="/workout/history" element={<Private Component={WorkoutHistory} />} />
+
+          {/* Reports */}
+          <Route path="/reports" element={<Private Component={WeeklyReport} />} />
 
           {/* Profile */}
           <Route path="/profile" element={<Private Component={User} />} />

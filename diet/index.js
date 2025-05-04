@@ -2,20 +2,17 @@ const express = require("express")
 const mongoose = require("mongoose")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
-const cors = require('cors');
+const cors = require("cors")
 require("dotenv").config()
 
 const userModel = require("./models/userModel")
-const verifyToken = require("./auth/verifyToken");
-const foodRoutes = require("./routes/food");
-const workoutRoutes = require("./routes/workoutRoutes");
-const workoutSessionRoutes = require("./routes/workoutSessionRoutes");
-const activityRoutes = require("./routes/activityRoutes");
+const verifyToken = require("./auth/verifyToken")
+const foodRoutes = require("./routes/food")
+const workoutRoutes = require("./routes/workoutRoutes")
+const workoutSessionRoutes = require("./routes/workoutSessionRoutes")
+const activityRoutes = require("./routes/activityRoutes")
+const reportRoutes = require("./routes/reportRoutes")
 const PORT = process.env.PORT || 5000
-
-
-
-
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/diet")
@@ -25,11 +22,12 @@ mongoose
 const app = express()
 app.use(express.json())
 app.use(cors())
-app.use("/api/workouts", workoutRoutes);
-app.use("/api/workout-sessions", workoutSessionRoutes);
-app.use("/api/activities", activityRoutes);
-console.log("Workout session routes mounted!");
-app.use("/food", foodRoutes);
+app.use("/api/workouts", workoutRoutes)
+app.use("/api/workout-sessions", workoutSessionRoutes)
+app.use("/api/activities", activityRoutes)
+app.use("/api/reports", reportRoutes)
+console.log("Workout session routes mounted!")
+app.use("/food", foodRoutes)
 
 /**
  * @route POST /register
@@ -67,7 +65,7 @@ app.post("/login", async (req, res) => {
       return res.status(403).send({ message: "Incorrect Password" })
     }
 
-    jwt.sign({id:user._id, email: user.email }, "diet", { expiresIn: "1h" }, async (err, token) => {
+    jwt.sign({ id: user._id, email: user.email }, "diet", { expiresIn: "1h" }, async (err, token) => {
       if (err) {
         return res.status(500).send({ message: "Error generating token" })
       }
@@ -94,8 +92,6 @@ app.post("/login", async (req, res) => {
     res.status(500).send({ message: "Server error" })
   }
 })
-
-
 
 /**
  * @route POST /user-details
@@ -198,31 +194,24 @@ app.get("/user/:id", verifyToken, async (req, res) => {
   }
 })
 
-
 /**
  * @route GET /me
  * @desc Fetch authenticated user info
  */
 app.get("/me", verifyToken, async (req, res) => {
   try {
-    const email = req.user.email;
-    const user = await userModel.findOne({ email });
+    const email = req.user.email
+    const user = await userModel.findOne({ email })
 
-    if (!user) return res.status(404).send({ message: "User not found" });
+    if (!user) return res.status(404).send({ message: "User not found" })
 
-    res.status(200).send(user);
+    res.status(200).send(user)
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Error fetching user info" });
+    console.error(err)
+    res.status(500).send({ message: "Error fetching user info" })
   }
-});
-
-
-
-
+})
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
-
+  console.log(`Server is running on port ${PORT}`)
+})
