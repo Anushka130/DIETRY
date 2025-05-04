@@ -11,7 +11,7 @@ const foodRoutes = require("./routes/food")
 const workoutRoutes = require("./routes/workoutRoutes")
 const workoutSessionRoutes = require("./routes/workoutSessionRoutes")
 const activityRoutes = require("./routes/activityRoutes")
-const reportRoutes = require("./routes/reportRoutes")
+const calorieSummaryRoutes = require("./routes/calorieSummaryRoutes")
 const PORT = process.env.PORT || 5000
 
 mongoose
@@ -25,7 +25,7 @@ app.use(cors())
 app.use("/api/workouts", workoutRoutes)
 app.use("/api/workout-sessions", workoutSessionRoutes)
 app.use("/api/activities", activityRoutes)
-app.use("/api/reports", reportRoutes)
+app.use("/api/calories", calorieSummaryRoutes) // Add the new routes
 console.log("Workout session routes mounted!")
 app.use("/food", foodRoutes)
 

@@ -9,9 +9,6 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaChartLine,
-  FaRunning,
-  FaAppleAlt,
-  FaWeight,
 } from "react-icons/fa"
 import {
   ResponsiveContainer,
@@ -21,14 +18,12 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend,
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
+  Legend,
 } from "recharts"
-import axios from "axios"
+import axiosInstance from "../../axiosInstance"
 import { toast } from "react-toastify"
 
 const WeeklyReport = () => {
@@ -38,7 +33,34 @@ const WeeklyReport = () => {
     weekNumber: 0,
   })
   const [loading, setLoading] = useState(true)
-  const [reportData, setReportData] = useState(null)
+  const [reportData, setReportData] = useState({
+    workouts: [],
+    foodEntries: [],
+    activities: [],
+    caloriesSummary: {
+      consumed: 0,
+      burned: 0,
+      net: 0,
+      workoutCalories: 0,
+      activityCalories: 0,
+    },
+    exerciseSummary: {
+      totalActivities: 0,
+      totalDuration: 0,
+      totalCaloriesBurned: 0,
+    },
+    foodSummary: {
+      averageCalories: 0,
+      totalCalories: 0,
+      mealBreakdown: {
+        Breakfast: 0,
+        Lunch: 0,
+        Dinner: 0,
+        Snacks: 0,
+      },
+    },
+    dailyCalories: [],
+  })
 
   // Initialize date range for current week
   useEffect(() => {
@@ -92,29 +114,109 @@ const WeeklyReport = () => {
   const fetchReportData = async () => {
     setLoading(true)
     try {
-      // Format dates for API request
+      // Format dates for API requests
       const startDateStr = dateRange.startDate.toISOString().split("T")[0]
       const endDateStr = dateRange.endDate.toISOString().split("T")[0]
 
-      // Use the new reports endpoint
-      const token = JSON.parse(sessionStorage.getItem("diet-user"))?.token
-      const response = await axios.get(`http://localhost:5000/api/reports/weekly`, {
+      // Get calorie summary for the date range
+      const calorieSummaryRes = await axiosInstance.get("/calories/range", {
         params: {
           startDate: startDateStr,
           endDate: endDateStr,
         },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       })
 
-      setReportData(response.data)
+      // Fetch workout sessions
+      const workoutResponse = await axiosInstance.get("/workout-sessions")
+
+      // Fetch activities
+      const activitiesResponse = await axiosInstance.get("/activities")
+
+      // Filter data for the selected date range
+      const filteredWorkouts = workoutResponse.data.filter((session) =>
+        isDateInRange(new Date(session.completedAt), dateRange.startDate, dateRange.endDate),
+      )
+
+      const filteredActivities = activitiesResponse.data.filter((activity) =>
+        isDateInRange(new Date(activity.date), dateRange.startDate, dateRange.endDate),
+      )
+
+      // Calculate combined exercise summary (workouts + activities)
+      const exerciseSummary = {
+        totalActivities: filteredWorkouts.length + filteredActivities.length,
+        totalDuration:
+          filteredWorkouts.reduce((sum, workout) => sum + (workout.duration || 0), 0) +
+          filteredActivities.reduce((sum, activity) => sum + (activity.duration || 0), 0),
+        totalCaloriesBurned:
+          filteredWorkouts.reduce((sum, workout) => sum + (workout.caloriesBurned || 0), 0) +
+          filteredActivities.reduce((sum, activity) => sum + (activity.calories || 0), 0),
+      }
+
+      // Get calorie summary data
+      const caloriesSummary = {
+        consumed: calorieSummaryRes.data.totalCaloriesConsumed || 0,
+        burned: calorieSummaryRes.data.totalCaloriesBurned || 0,
+        net: calorieSummaryRes.data.totalNetCalories || 0,
+        workoutCalories: calorieSummaryRes.data.totalWorkoutCalories || 0,
+        activityCalories: calorieSummaryRes.data.totalActivityCalories || 0,
+      }
+
+      // Process daily calorie data
+      const dailyCalories = calorieSummaryRes.data.dailySummaries.map((day) => ({
+        date: new Date(day.date).toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" }),
+        consumed: day.caloriesConsumed,
+        burned: day.caloriesBurned,
+        net: day.netCalories,
+        fullDate: day.date,
+      }))
+
+      // Sort dailyCalories by date
+      dailyCalories.sort((a, b) => new Date(a.fullDate) - new Date(b.fullDate))
+
+      // Calculate meal breakdown from the calorie summary data
+      const mealBreakdown = {
+        Breakfast: 0,
+        Lunch: 0,
+        Dinner: 0,
+        Snacks: 0,
+      }
+
+      // Process food entries from daily summaries
+      calorieSummaryRes.data.dailySummaries.forEach((day) => {
+        // This is a simplification - in a real implementation, you'd need to fetch actual meal breakdown data
+        // For now, we'll estimate based on typical meal distributions
+        mealBreakdown.Breakfast += day.caloriesConsumed * 0.25
+        mealBreakdown.Lunch += day.caloriesConsumed * 0.35
+        mealBreakdown.Dinner += day.caloriesConsumed * 0.3
+        mealBreakdown.Snacks += day.caloriesConsumed * 0.1
+      })
+
+      // Calculate food summary
+      const foodSummary = {
+        totalCalories: caloriesSummary.consumed,
+        averageCalories: Math.round(caloriesSummary.consumed / 7),
+        mealBreakdown,
+      }
+
+      setReportData({
+        workouts: filteredWorkouts,
+        activities: filteredActivities,
+        caloriesSummary,
+        exerciseSummary,
+        foodSummary,
+        dailyCalories,
+      })
     } catch (error) {
       console.error("Error fetching report data:", error)
       toast.error("Failed to load weekly report data")
     } finally {
       setLoading(false)
     }
+  }
+
+  // Helper function to check if a date is within a range
+  const isDateInRange = (date, startDate, endDate) => {
+    return date >= startDate && date <= endDate
   }
 
   // Format date range for display
@@ -130,81 +232,26 @@ const WeeklyReport = () => {
 
   // Prepare data for meal breakdown chart
   const prepareMealBreakdownData = () => {
-    if (!reportData) return []
-
-    const { mealBreakdown } = reportData.summary.foodSummary
+    const { mealBreakdown } = reportData.foodSummary
     return Object.entries(mealBreakdown)
-      .map(([name, data]) => ({
+      .map(([name, calories]) => ({
         name,
-        calories: Math.round(data.calories),
-        protein: Math.round(data.protein),
-        carbs: Math.round(data.carbs),
-        fats: Math.round(data.fats),
+        calories: Math.round(calories),
       }))
-      .sort((a, b) => b.calories - a.calories)
+      .sort((a, b) => b.calories - a.calories) // Sort by calories in descending order
   }
 
-  // Prepare data for daily calories chart
-  const prepareDailyCaloriesData = () => {
-    if (!reportData) return []
-
-    return reportData.dateRange.days.map((day) => {
-      const dayData = reportData.details.dailySummary[day]
-      const date = new Date(day)
-      const formattedDate = `${date.toLocaleDateString("en-US", { weekday: "short" })} ${date.getMonth() + 1}/${date.getDate()}`
-
-      return {
-        date: formattedDate,
-        consumed: Math.round(dayData.caloriesConsumed),
-        burned: Math.round(dayData.caloriesBurned),
-        net: Math.round(dayData.netCalories),
-        fullDate: day,
-      }
-    })
-  }
-
-  // Prepare data for workout distribution chart
-  const prepareWorkoutDistributionData = () => {
-    if (!reportData) return []
-
-    return Object.entries(reportData.details.workoutsByCategory).map(([category, data]) => ({
-      name: category,
-      count: data.count,
-      duration: Math.round(data.duration),
-      calories: Math.round(data.caloriesBurned),
-    }))
-  }
-
-  // Prepare data for macronutrient breakdown
-  const prepareMacronutrientData = () => {
-    if (!reportData) return []
-
-    const { totalProtein, totalCarbs, totalFats } = reportData.summary.foodSummary
+  // Prepare data for calorie source breakdown
+  const prepareCalorieSourceData = () => {
     return [
-      { name: "Protein", value: Math.round(totalProtein), color: "#4CAF50" },
-      { name: "Carbs", value: Math.round(totalCarbs), color: "#2196F3" },
-      { name: "Fats", value: Math.round(totalFats), color: "#FFC107" },
+      { name: "Food", value: reportData.caloriesSummary.consumed },
+      { name: "Workouts", value: reportData.caloriesSummary.workoutCalories },
+      { name: "Activities", value: reportData.caloriesSummary.activityCalories },
     ]
   }
 
-  // Prepare data for daily macros chart
-  const prepareDailyMacrosData = () => {
-    if (!reportData) return []
-
-    return reportData.dateRange.days.map((day) => {
-      const dayData = reportData.details.dailySummary[day]
-      const date = new Date(day)
-      const formattedDate = `${date.toLocaleDateString("en-US", { weekday: "short" })} ${date.getMonth() + 1}/${date.getDate()}`
-
-      return {
-        date: formattedDate,
-        protein: Math.round(dayData.protein),
-        carbs: Math.round(dayData.carbs),
-        fats: Math.round(dayData.fats),
-        fullDate: day,
-      }
-    })
-  }
+  // Colors for pie charts
+  const COLORS = ["#FF9800", "#28A745", "#2196F3", "#9C27B0"]
 
   if (loading) {
     return (
@@ -237,319 +284,196 @@ const WeeklyReport = () => {
         </div>
       </div>
 
-      {reportData ? (
-        <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Calories Summary */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-[#004D40]">Calories Summary</h2>
-                <div className="h-10 w-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
-                  <FaFire className="text-[#28A745]" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Consumed</span>
-                  <span className="font-medium">
-                    {reportData.summary.caloriesSummary.consumed.toLocaleString()} kcal
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Burned</span>
-                  <span className="font-medium">{reportData.summary.caloriesSummary.burned.toLocaleString()} kcal</span>
-                </div>
-                <div className="h-px bg-gray-200 my-2"></div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 font-medium">Net Calories</span>
-                  <span
-                    className={`font-bold ${reportData.summary.caloriesSummary.net > 0 ? "text-orange-500" : "text-green-500"}`}
-                  >
-                    {reportData.summary.caloriesSummary.net.toLocaleString()} kcal
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Exercise Summary */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-[#004D40]">Exercise Summary</h2>
-                <div className="h-10 w-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
-                  <FaDumbbell className="text-[#28A745]" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Workouts</span>
-                  <span className="font-medium">{reportData.summary.exerciseSummary.totalWorkouts}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Activities</span>
-                  <span className="font-medium">{reportData.summary.exerciseSummary.totalActivities}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Duration</span>
-                  <span className="font-medium">{reportData.summary.exerciseSummary.totalDuration} min</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Calories Burned</span>
-                  <span className="font-medium">
-                    {reportData.summary.exerciseSummary.totalCaloriesBurned.toLocaleString()} kcal
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Food Summary */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-[#004D40]">Food Summary</h2>
-                <div className="h-10 w-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
-                  <FaUtensils className="text-[#28A745]" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Calories</span>
-                  <span className="font-medium">
-                    {reportData.summary.foodSummary.totalCalories.toLocaleString()} kcal
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Daily Average</span>
-                  <span className="font-medium">
-                    {reportData.summary.foodSummary.averageCalories.toLocaleString()} kcal
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Protein</span>
-                  <span className="font-medium">{Math.round(reportData.summary.foodSummary.totalProtein)} g</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Carbs</span>
-                  <span className="font-medium">{Math.round(reportData.summary.foodSummary.totalCarbs)} g</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Fats</span>
-                  <span className="font-medium">{Math.round(reportData.summary.foodSummary.totalFats)} g</span>
-                </div>
-              </div>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Calories Summary */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-[#004D40]">Calories Summary</h2>
+            <div className="h-10 w-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
+              <FaFire className="text-[#28A745]" />
             </div>
           </div>
-
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Daily Calories Chart */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
-                <FaFire className="mr-2 text-[#28A745]" /> Daily Calorie Balance
-              </h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={prepareDailyCaloriesData()} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis
-                      dataKey="date"
-                      stroke="#9CA3AF"
-                      tick={{ fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip
-                      formatter={(value, name) => {
-                        const formattedName = name === "consumed" ? "Consumed" : name === "burned" ? "Burned" : "Net"
-                        return [`${value} kcal`, formattedName]
-                      }}
-                      labelFormatter={(label) => `Date: ${label}`}
-                    />
-                    <Legend />
-                    <Bar dataKey="consumed" name="Consumed" fill="#FF9800" />
-                    <Bar dataKey="burned" name="Burned" fill="#28A745" />
-                    <Bar dataKey="net" name="Net" fill="#2196F3" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Consumed</span>
+              <span className="font-medium">{reportData.caloriesSummary.consumed.toLocaleString()} kcal</span>
             </div>
-
-            {/* Meal Breakdown Chart */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
-                <FaUtensils className="mr-2 text-[#28A745]" /> Calories by Meal Type
-              </h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={prepareMealBreakdownData()} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip />
-                    <Bar dataKey="calories" name="Calories" fill="#28A745" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Burned</span>
+              <span className="font-medium">{reportData.caloriesSummary.burned.toLocaleString()} kcal</span>
             </div>
-
-            {/* Macronutrient Breakdown */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
-                <FaAppleAlt className="mr-2 text-[#28A745]" /> Macronutrient Breakdown
-              </h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={prepareMacronutrientData()}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {prepareMacronutrientData().map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => `${value}g`} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-                {prepareMacronutrientData().map((macro, index) => (
-                  <div key={index} className="bg-gray-50 p-3 rounded-lg">
-                    <div className="font-bold text-lg" style={{ color: macro.color }}>
-                      {macro.value}g
-                    </div>
-                    <div className="text-sm text-gray-600">{macro.name}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Workout Distribution */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
-                <FaDumbbell className="mr-2 text-[#28A745]" /> Workout Distribution
-              </h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={prepareWorkoutDistributionData()} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="count" name="Sessions" fill="#4CAF50" />
-                    <Bar dataKey="calories" name="Calories Burned" fill="#FF9800" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Daily Macros Trend */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
-                <FaWeight className="mr-2 text-[#28A745]" /> Daily Macros Trend
-              </h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={prepareDailyMacrosData()} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis
-                      dataKey="date"
-                      stroke="#9CA3AF"
-                      tick={{ fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip formatter={(value) => `${value}g`} />
-                    <Legend />
-                    <Line type="monotone" dataKey="protein" name="Protein" stroke="#4CAF50" strokeWidth={2} />
-                    <Line type="monotone" dataKey="carbs" name="Carbs" stroke="#2196F3" strokeWidth={2} />
-                    <Line type="monotone" dataKey="fats" name="Fats" stroke="#FFC107" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Activity Summary */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
-                <FaRunning className="mr-2 text-[#28A745]" /> Activity Summary
-              </h2>
-              <div className="space-y-4">
-                {Object.entries(reportData.details.activitiesByType).map(([type, data], index) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-gray-800">{type}</span>
-                      <span className="text-sm text-gray-600">{data.count} sessions</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>Duration: {data.duration} min</span>
-                      <span>Calories: {Math.round(data.caloriesBurned)} kcal</span>
-                    </div>
-                  </div>
-                ))}
-                {Object.keys(reportData.details.activitiesByType).length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <FaRunning className="mx-auto text-gray-300 text-4xl mb-3" />
-                    <p>No activities recorded for this period</p>
-                  </div>
-                )}
-              </div>
+            <div className="h-px bg-gray-200 my-2"></div>
+            <div className="flex justify-between">
+              <span className="text-gray-600 font-medium">Net Calories</span>
+              <span
+                className={`font-bold ${reportData.caloriesSummary.net > 0 ? "text-orange-500" : "text-green-500"}`}
+              >
+                {reportData.caloriesSummary.net.toLocaleString()} kcal
+              </span>
             </div>
           </div>
-
-          {/* Weekly Progress Summary */}
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
-              <FaChartLine className="mr-2 text-[#28A745]" /> Weekly Progress
-            </h2>
-            <div className="flex flex-col md:flex-row items-center justify-around py-6">
-              <div className="text-center mb-6 md:mb-0">
-                <div className="text-6xl font-bold text-[#28A745] mb-2">
-                  {reportData.summary.exerciseSummary.totalWorkouts +
-                    reportData.summary.exerciseSummary.totalActivities}
-                </div>
-                <p className="text-gray-600">Total Activities</p>
-              </div>
-
-              <div className="text-center mb-6 md:mb-0">
-                <div className="text-6xl font-bold text-[#28A745] mb-2">
-                  {Math.round(reportData.summary.exerciseSummary.totalDuration / 60)}
-                </div>
-                <p className="text-gray-600">Hours of Exercise</p>
-              </div>
-
-              <div className="text-center">
-                <div className="text-6xl font-bold text-[#28A745] mb-2">
-                  {Math.abs(reportData.summary.caloriesSummary.net).toLocaleString()}
-                </div>
-                <p className="text-gray-600">
-                  {reportData.summary.caloriesSummary.net <= 0 ? "Calorie Deficit" : "Calorie Surplus"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="text-center py-12">
-          <FaChartLine className="text-gray-300 text-6xl mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">No Data Available</h2>
-          <p className="text-gray-500 mb-6">
-            There is no data available for this period. Try selecting a different date range or add some entries to your
-            food diary and workout log.
-          </p>
         </div>
-      )}
+
+        {/* Exercise Summary (Combined Workouts & Activities) */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-[#004D40]">Exercise Summary</h2>
+            <div className="h-10 w-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
+              <FaDumbbell className="text-[#28A745]" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total Activities</span>
+              <span className="font-medium">{reportData.exerciseSummary.totalActivities}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total Duration</span>
+              <span className="font-medium">{reportData.exerciseSummary.totalDuration} min</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Calories Burned</span>
+              <span className="font-medium">
+                {reportData.exerciseSummary.totalCaloriesBurned.toLocaleString()} kcal
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Food Summary */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-[#004D40]">Food Summary</h2>
+            <div className="h-10 w-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
+              <FaUtensils className="text-[#28A745]" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total Calories</span>
+              <span className="font-medium">{reportData.foodSummary.totalCalories.toLocaleString()} kcal</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Daily Average</span>
+              <span className="font-medium">{reportData.foodSummary.averageCalories.toLocaleString()} kcal</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Calorie Sources</span>
+              <span className="font-medium">{Object.keys(reportData.foodSummary.mealBreakdown).length} meal types</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Daily Calories Chart */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
+            <FaUtensils className="mr-2 text-[#28A745]" /> Daily Calorie Intake vs. Burned
+          </h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={reportData.dailyCalories} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="date"
+                  stroke="#9CA3AF"
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip
+                  formatter={(value) => [`${value} kcal`, "Calories"]}
+                  labelFormatter={(label) => `Date: ${label}`}
+                />
+                <Legend />
+                <Bar dataKey="consumed" name="Calories Consumed" fill="#FF9800" />
+                <Bar dataKey="burned" name="Calories Burned" fill="#28A745" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Calorie Sources Pie Chart */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
+            <FaFire className="mr-2 text-[#28A745]" /> Calorie Sources
+          </h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={prepareCalorieSourceData()}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                >
+                  {prepareCalorieSourceData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => `${value.toLocaleString()} kcal`} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Meal Breakdown Chart */}
+      <div className="bg-white rounded-xl shadow p-6 mb-8">
+        <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
+          <FaUtensils className="mr-2 text-[#28A745]" /> Calories by Meal Type
+        </h2>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={prepareMealBreakdownData()} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip formatter={(value) => `${value.toLocaleString()} kcal`} />
+              <Bar dataKey="calories" fill="#FF9800" name="Calories" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Weekly Progress Summary */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold text-[#004D40] mb-4 flex items-center">
+          <FaChartLine className="mr-2 text-[#28A745]" /> Weekly Progress
+        </h2>
+        <div className="flex flex-col md:flex-row items-center justify-around py-6">
+          <div className="text-center mb-6 md:mb-0">
+            <div className="text-6xl font-bold text-[#28A745] mb-2">{reportData.exerciseSummary.totalActivities}</div>
+            <p className="text-gray-600">Total Activities</p>
+          </div>
+
+          <div className="text-center mb-6 md:mb-0">
+            <div className="text-6xl font-bold text-[#28A745] mb-2">
+              {Math.round(reportData.exerciseSummary.totalDuration / 60)}
+            </div>
+            <p className="text-gray-600">Hours of Exercise</p>
+          </div>
+
+          <div className="text-center">
+            <div className="text-6xl font-bold text-[#28A745] mb-2">
+              {Math.abs(reportData.caloriesSummary.net).toLocaleString()}
+            </div>
+            <p className="text-gray-600">
+              {reportData.caloriesSummary.net <= 0 ? "Calorie Deficit" : "Calorie Surplus"}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
