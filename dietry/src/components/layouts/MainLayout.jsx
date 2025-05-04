@@ -13,15 +13,11 @@ import {
   FaBars,
   FaTimes,
   FaHeartbeat,
-  FaChevronDown,
-  FaChevronRight,
-  FaAppleAlt,
   FaRegStickyNote,
 } from "react-icons/fa"
 
 const MainLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [foodMenuOpen, setFoodMenuOpen] = useState(false)
   const { loggedUser, setLoggedUser } = useContext(UserContext)
   const navigate = useNavigate()
   const location = useLocation()
@@ -94,42 +90,17 @@ const MainLayout = ({ children }) => {
             </li>
 
             <li>
-              <div
-                onClick={() => setFoodMenuOpen(!foodMenuOpen)}
-                className={`flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer ${
+              <Link
+                to="/food/diary"
+                className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                   isActive("/food") ? "bg-[#E8F5E9] text-[#28A745]" : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <span className={`${isActive("/food") ? "text-[#28A745]" : "text-gray-500"} mr-3`}>
                   <FaUtensils className="text-xl" />
                 </span>
-                <div className="flex items-center justify-between w-full">
-                  <span className="font-medium">Foods</span>
-                  {foodMenuOpen ? (
-                    <FaChevronDown className="text-gray-400 text-xs" />
-                  ) : (
-                    <FaChevronRight className="text-gray-400 text-xs" />
-                  )}
-                </div>
-              </div>
-
-              {foodMenuOpen && (
-                <ul className="ml-8 mt-1 space-y-1">
-                  <li>
-                    <Link
-                      to="/food/diary"
-                      className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                        location.pathname === "/food/diary"
-                          ? "bg-[#E8F5E9] text-[#28A745]"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <FaAppleAlt className="mr-3 text-[#28A745] text-sm" />
-                      <span>Food Diary</span>
-                    </Link>
-                  </li>
-                </ul>
-              )}
+                <span className="font-medium">Food Diary</span>
+              </Link>
             </li>
 
             <li>

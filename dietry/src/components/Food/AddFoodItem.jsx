@@ -5,128 +5,132 @@ import { FaPlus } from "react-icons/fa"
 import axios from "axios"
 
 const AddFoodItem = ({ onClose, mealType, onAddFood }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("")
+  const [searchResults, setSearchResults] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [showAddForm, setShowAddForm] = useState(false)
   const [newFood, setNewFood] = useState({
     name: "",
     calories: "",
     protein: "",
     carbs: "",
     fats: "",
-    category: mealType || "Breakfast"
-  });
+    category: mealType || "Breakfast",
+  })
 
-  const API_URL = "http://localhost:5000";
-  const token = JSON.parse(sessionStorage.getItem("diet-user"))?.token;
+  const API_URL = "http://localhost:5000"
+  const token = JSON.parse(sessionStorage.getItem("diet-user"))?.token
 
-  const foodCategories = ["Breakfast", "Lunch", "Dinner", "Snacks"];
+  const foodCategories = ["Breakfast", "Lunch", "Dinner", "Snacks"]
 
   const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchTerm.trim()) return setSearchResults([]);
-  
-    setLoading(true);
-    setError(null);
-  
+    e.preventDefault()
+    if (!searchTerm.trim()) return setSearchResults([])
+
+    setLoading(true)
+    setError(null)
+
     try {
-      const response = await axios.get(
-        `${API_URL}/food/${encodeURIComponent(searchTerm)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-      setSearchResults(response.data);
+      const response = await axios.get(`${API_URL}/food/${encodeURIComponent(searchTerm)}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      setSearchResults(response.data)
     } catch (err) {
       if (err.response && err.response.data && err.response.data.suggestions) {
-        setError(`No exact match found. Did you mean: ${err.response.data.suggestions.join(", ")}?`);
+        setError(`No exact match found. Did you mean: ${err.response.data.suggestions.join(", ")}?`)
       } else {
-        setError("Failed to search for foods");
+        setError("Failed to search for foods")
       }
-      setSearchResults([]);
+      setSearchResults([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleAddFood = (food) => {
-    onAddFood({ ...food, mealType });
-    onClose();
-  };
+    onAddFood({ ...food, mealType })
+    onClose()
+  }
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewFood(prev => ({
+    const { name, value } = e.target
+    setNewFood((prev) => ({
       ...prev,
-      [name]: name === "name" || name === "category" ? value : value === "" ? "" : Number(value)
-    }));
-  };
+      [name]: name === "name" || name === "category" ? value : value === "" ? "" : Number(value),
+    }))
+  }
 
   const handleAddNewFood = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-  
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
     try {
-      const response = await axios.post(`${API_URL}/food`, {
-        name: newFood.name,
-        calories: newFood.calories,
-        protein: newFood.protein,
-        carbs: newFood.carbs,
-        fats: newFood.fats,
-        category: newFood.category
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-  
-      setSearchResults([response.data.food, ...searchResults]);
+      const response = await axios.post(
+        `${API_URL}/food`,
+        {
+          name: newFood.name,
+          calories: newFood.calories,
+          protein: newFood.protein,
+          carbs: newFood.carbs,
+          fats: newFood.fats,
+          category: newFood.category,
+          isGlobal: true, // Make all new foods global by default
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      setSearchResults([response.data.food, ...searchResults])
       setNewFood({
         name: "",
         calories: "",
         protein: "",
         carbs: "",
         fats: "",
-        category: mealType || "Breakfast"
-      });
-      setShowAddForm(false);
+        category: mealType || "Breakfast",
+      })
+      setShowAddForm(false)
     } catch (err) {
       if (err.response && err.response.status === 409) {
-        setError("Food with this name already exists.");
+        setError("Food with this name already exists.")
       } else {
-        setError("Failed to add new food");
+        setError("Failed to add new food")
       }
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const addFoodToDiary = async (food) => {
     try {
-      handleAddFood(food);
+      handleAddFood(food)
     } catch (err) {
-      setError("Failed to add food to diary");
+      setError("Failed to add food to diary")
     }
-  };
+  }
 
   useEffect(() => {
-    setNewFood(prev => ({
+    setNewFood((prev) => ({
       ...prev,
-      category: mealType || "Breakfast"
-    }));
-  }, [mealType]);
+      category: mealType || "Breakfast",
+    }))
+  }, [mealType])
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 `w`-full max-w-lg rounded-lg">
+      <div className="bg-white p-6 w-full max-w-lg rounded-lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-[#004D40]">Add Food to {mealType}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">&times;</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            &times;
+          </button>
         </div>
 
         <form onSubmit={handleSearch} className="mb-4 flex">
@@ -198,7 +202,9 @@ const AddFoodItem = ({ onClose, mealType, onAddFood }) => {
               className="w-full p-2 mb-2 border border-gray-300"
             >
               {foodCategories.map((category) => (
-                <option key={category} value={category}>{category}</option>
+                <option key={category} value={category}>
+                  {category}
+                </option>
               ))}
             </select>
             <button type="submit" className="w-full bg-[#28A745] text-white py-2 mt-2 rounded-md" disabled={loading}>
@@ -215,7 +221,9 @@ const AddFoodItem = ({ onClose, mealType, onAddFood }) => {
                   <div>
                     <h4 className="font-medium">{food.name}</h4>
                     <p className="text-sm text-gray-500">{food.calories} kcal</p>
-                    <p className="text-xs text-gray-400">P: {food.protein}g | C: {food.carbs}g | F: {food.fats}g</p>
+                    <p className="text-xs text-gray-400">
+                      P: {food.protein}g | C: {food.carbs}g | F: {food.fats}g
+                    </p>
                   </div>
                   <button
                     onClick={() => addFoodToDiary(food)}
@@ -232,7 +240,7 @@ const AddFoodItem = ({ onClose, mealType, onAddFood }) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default AddFoodItem;
+export default AddFoodItem

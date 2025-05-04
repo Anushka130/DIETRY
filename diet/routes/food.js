@@ -6,21 +6,33 @@ const DiaryEntry = require("../models/diaryModel")
 
 router.post("/", verifyToken, async (req, res) => {
   const { name, calories, protein, carbs, fats, category } = req.body
-  const userId = req.user.id // Changed from req.user.userId to req.user.id
+  const userId = req.user.id
   const searchTerm = name.toLowerCase()
 
   try {
-    console.log(`🔍 Checking if food ${name} exists for user ${userId}`)
-    const existingFoods = await Food.find({ userId })
-    const alreadyExists = existingFoods.some((f) => f.name.toLowerCase() === searchTerm)
+    console.log(`🔍 Checking if food ${name} exists globally`)
+    // Check if food exists globally first
+    const existingFood = await Food.findOne({
+      name: { $regex: new RegExp(`^${searchTerm}$`, "i") },
+      isGlobal: true,
+    })
 
-    if (alreadyExists) {
-      console.log(`❌ Food with name ${name} already exists for user ${userId}`)
+    if (existingFood) {
+      console.log(`❌ Food with name ${name} already exists globally`)
       return res.status(409).send({ message: "Food with this name already exists." })
     }
 
     console.log(`✅ Adding new food: ${name}`)
-    const newFood = new Food({ name, calories, protein, carbs, fats, category, userId })
+    const newFood = new Food({
+      name,
+      calories,
+      protein,
+      carbs,
+      fats,
+      category,
+      userId,
+      isGlobal: true, // Make all new foods global by default
+    })
 
     await newFood.save()
     console.log(`✅ Food ${name} added successfully`)
@@ -34,12 +46,13 @@ router.post("/", verifyToken, async (req, res) => {
 router.get("/:name", verifyToken, async (req, res) => {
   console.log("Food route hit")
   try {
-    const userId = req.user.id // Changed from req.user.userId to req.user.id
-    console.log(`🔍 Fetching all foods for user ${userId}`)
-
-    const allFoods = await Food.find({ userId })
+    console.log(`🔍 Fetching all foods matching: ${req.params.name}`)
     const searchTerm = req.params.name.toLowerCase()
-    console.log(`🔍 Searching for foods matching: ${searchTerm}`)
+
+    // Search for all foods (global and user-specific)
+    const allFoods = await Food.find({
+      $or: [{ isGlobal: true }, { userId: req.user.id }],
+    })
 
     function fuzzyMatch(food, search) {
       const foodName = food.name.toLowerCase()
@@ -97,7 +110,7 @@ router.get("/:name", verifyToken, async (req, res) => {
 router.post("/diary", verifyToken, async (req, res) => {
   try {
     const { foodId, date, category, quantity } = req.body
-    const userId = req.user.id // Changed from req.user.userId to req.user.id
+    const userId = req.user.id
     console.log(`🔍 Adding entry to diary for user ${userId}, food ID: ${foodId}, date: ${date}`)
 
     const diaryEntry = await DiaryEntry.create({
@@ -119,7 +132,7 @@ router.post("/diary", verifyToken, async (req, res) => {
 router.get("/diary/:date", verifyToken, async (req, res) => {
   try {
     const { date } = req.params
-    const userId = req.user.id // Changed from req.user.userId to req.user.id
+    const userId = req.user.id
     const targetDate = new Date(date)
     const start = new Date(targetDate.setHours(0, 0, 0, 0))
     const end = new Date(targetDate.setHours(23, 59, 59, 999))
@@ -170,6 +183,19 @@ router.delete("/diary/:entryId", verifyToken, async (req, res) => {
   } catch (err) {
     console.error("Error deleting diary entry:", err)
     res.status(500).send({ message: "Failed to delete diary entry" })
+  }
+})
+
+// New route to get all global foods
+router.get("/", verifyToken, async (req, res) => {
+  try {
+    console.log(`🔍 Fetching all global foods`)
+    const foods = await Food.find({ isGlobal: true })
+    console.log(`✅ Found ${foods.length} global foods`)
+    res.status(200).send(foods)
+  } catch (err) {
+    console.error("Error fetching global foods:", err)
+    res.status(500).send({ message: "Failed to fetch global foods" })
   }
 })
 
