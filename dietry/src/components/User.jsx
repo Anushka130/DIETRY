@@ -12,7 +12,6 @@ import {
   FaVenusMars,
   FaRunning,
   FaBullseye,
-  FaAllergies,
   FaEdit,
   FaTimes,
   FaArrowLeft,
@@ -34,7 +33,6 @@ const User = () => {
     goal: "",
   })
 
-  const [allergy, setAllergy] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const fetchUser = async () => {
@@ -99,41 +97,6 @@ const User = () => {
     }
   }
 
-  const handleAllergySubmit = async (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    const token = loggedUser.token
-
-    try {
-      const response = await fetch("http://127.0.0.1:5000/update-allergy", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ allergy, hasAllergyInfo: true }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        const updatedUser = { ...loggedUser, allergy, hasAllergyInfo: true }
-        sessionStorage.setItem("diet-user", JSON.stringify(updatedUser))
-        setLoggedUser(updatedUser)
-        setShowModal(null)
-        fetchUser()
-        toast.success("Allergy information updated successfully")
-      } else {
-        toast.error(data.message || "Failed to update allergy information")
-      }
-    } catch (err) {
-      console.error("Error updating allergies:", err)
-      toast.error("Failed to update allergy information")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const openModal = (type) => {
     if (type === "details") {
       setUserDetails({
@@ -143,8 +106,6 @@ const User = () => {
         activityLevel: user.activityLevel || "",
         goal: user.goal || "",
       })
-    } else if (type === "allergy") {
-      setAllergy(user.allergy || "")
     }
     setShowModal(type)
   }
@@ -273,16 +234,6 @@ const User = () => {
                   <p className="font-medium text-gray-800">{formatValue("goal", user.goal)}</p>
                 </div>
               </div>
-
-              <div className="flex items-start">
-                <div className="mt-1 mr-3 w-8 h-8 rounded-full bg-[#E8F5E9] flex items-center justify-center text-[#28A745]">
-                  <FaAllergies />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Allergies</p>
-                  <p className="font-medium text-gray-800">{user.allergy || "None"}</p>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -292,12 +243,6 @@ const User = () => {
               className="flex-1 bg-[#28A745] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#218838] transition-colors flex items-center justify-center"
             >
               <FaEdit className="mr-2" /> Update Profile
-            </button>
-            <button
-              onClick={() => openModal("allergy")}
-              className="flex-1 bg-[#E8F5E9] text-[#28A745] py-3 px-4 rounded-lg font-medium hover:bg-[#C8E6C9] transition-colors flex items-center justify-center"
-            >
-              <FaAllergies className="mr-2" /> Update Allergies
             </button>
           </div>
         </div>
@@ -429,84 +374,6 @@ const User = () => {
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-[#28A745] text-white rounded-lg hover:bg-[#218838] flex items-center"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Update Allergy Modal */}
-      {showModal === "allergy" && (
-        <div className="fixed inset-0 bg-transparent backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-popup transform scale-100 transition-all duration-300 relative">
-            <div className="bg-[#28A745] py-4 px-6 text-white flex items-center justify-between">
-              <h3 className="text-xl font-bold">Update Allergies</h3>
-              <button onClick={() => setShowModal(null)} className="text-white hover:text-gray-200 focus:outline-none">
-                <FaTimes />
-              </button>
-            </div>
-
-            <form onSubmit={handleAllergySubmit} className="p-6">
-              <div className="mb-6">
-                <label htmlFor="allergies" className="block text-sm font-medium text-gray-700 mb-1">
-                  Allergies (Optional)
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaAllergies className="text-gray-400" />
-                  </div>
-                  <textarea
-                    id="allergies"
-                    value={allergy}
-                    onChange={(e) => setAllergy(e.target.value)}
-                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#28A745] focus:border-[#28A745] transition-colors resize-none h-32"
-                    placeholder="Enter any food allergies or intolerances (e.g., nuts, dairy, gluten)"
-                  ></textarea>
-                </div>
-                <p className="mt-2 text-sm text-gray-500">Leave blank if you don&apos;t have any allergies.</p>
-              </div>
-
-              <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setShowModal(null)}

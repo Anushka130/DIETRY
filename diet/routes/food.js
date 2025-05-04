@@ -143,15 +143,19 @@ router.delete("/diary/:entryId", verifyToken, async (req, res) => {
     const { entryId } = req.params
     const userId = req.user.id
 
+    console.log(`🔍 Attempting to delete diary entry ${entryId} for user ${userId}`)
+
     // Find the diary entry and verify it belongs to the user
     const diaryEntry = await DiaryEntry.findById(entryId)
 
     if (!diaryEntry) {
+      console.log(`❌ Diary entry ${entryId} not found`)
       return res.status(404).send({ message: "Diary entry not found" })
     }
 
     // Verify the entry belongs to the requesting user
     if (diaryEntry.userId.toString() !== userId) {
+      console.log(`❌ User ${userId} not authorized to delete entry ${entryId}`)
       return res.status(403).send({ message: "Not authorized to delete this entry" })
     }
 
@@ -159,7 +163,10 @@ router.delete("/diary/:entryId", verifyToken, async (req, res) => {
     await DiaryEntry.findByIdAndDelete(entryId)
     console.log(`✅ Deleted diary entry ${entryId} for user ${userId}`)
 
-    res.status(200).send({ message: "Diary entry deleted successfully" })
+    res.status(200).send({
+      message: "Diary entry deleted successfully",
+      deletedEntryId: entryId,
+    })
   } catch (err) {
     console.error("Error deleting diary entry:", err)
     res.status(500).send({ message: "Failed to delete diary entry" })

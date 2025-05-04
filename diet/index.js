@@ -38,7 +38,7 @@ app.post("/register", async (req, res) => {
     const user = req.body
     const salt = await bcrypt.genSalt(10)
     user.password = await bcrypt.hash(user.password, salt)
-    user.hasAllergyInfo = false // Ensure allergy step is false by default
+    user.hasAllergyInfo = true // Set allergy step as completed by default
     await userModel.create(user)
     res.status(201).send({ message: "User Registered" })
   } catch (err) {
@@ -80,9 +80,8 @@ app.post("/login", async (req, res) => {
         gender: user.gender,
         activityLevel: user.activityLevel,
         goal: user.goal,
-        allergy: user.allergy,
         hasDetails: user.hasDetails, // Virtual field
-        hasAllergyInfo: user.hasAllergyInfo, // Allergy selection status
+        hasAllergyInfo: true, // Always set to true since we removed allergy feature
       }
 
       res.send({ message: "Login Success", token, ...userData })
@@ -130,41 +129,6 @@ app.post("/user-details", verifyToken, async (req, res) => {
   } catch (err) {
     console.error(err)
     res.status(500).send({ message: "Error updating user details" })
-  }
-})
-
-/**
- * @route POST /update-allergy
- * @desc Update allergy information (optional step)
- */
-app.post("/update-allergy", verifyToken, async (req, res) => {
-  try {
-    const { allergy } = req.body
-    const email = req.user.email
-
-    const updatedUser = await userModel.findOneAndUpdate(
-      { email },
-      { allergy, hasAllergyInfo: true }, // Mark allergy step as completed
-      { new: true },
-    )
-
-    if (!updatedUser) {
-      return res.status(404).send({ message: "User not found" })
-    }
-
-    res.status(200).send({
-      message: "Allergy information updated successfully",
-      user: {
-        id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        allergy: updatedUser.allergy,
-        hasAllergyInfo: updatedUser.hasAllergyInfo,
-      },
-    })
-  } catch (err) {
-    console.error(err)
-    res.status(500).send({ message: "Error updating allergy information" })
   }
 })
 

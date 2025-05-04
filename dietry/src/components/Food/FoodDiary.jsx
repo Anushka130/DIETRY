@@ -11,6 +11,7 @@ import {
   FaChevronRight,
   FaFire,
   FaChartBar,
+  FaTrash,
 } from "react-icons/fa"
 import axios from "axios"
 import { UserContext } from "../../contexts/UserContext"
@@ -92,7 +93,8 @@ const FoodDiary = () => {
           // Add null check for entry and entry.food
           if (mealData[entry.category]) {
             const foodItem = {
-              _id: entry.food._id,
+              _id: entry._id, // Store the diary entry ID instead of food ID
+              foodId: entry.food._id,
               name: entry.food.name,
               calories: entry.food.calories * entry.quantity,
               protein: entry.food.protein * entry.quantity,
@@ -217,6 +219,28 @@ const FoodDiary = () => {
 
   const dailyTotals = calculateDailyTotals()
 
+  const handleDeleteFoodItem = async (entryId) => {
+    if (!confirm("Are you sure you want to delete this food item?")) return
+
+    setLoading(true)
+    try {
+      await axios.delete(`${API_URL}/food/diary/${entryId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      toast.success("Food item deleted successfully")
+      fetchFoodEntries()
+      fetchCalorieSummary()
+    } catch (err) {
+      console.error("Error deleting food item:", err)
+      toast.error("Failed to delete food item")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <div className="bg-white rounded-lg shadow p-4 mb-4">
@@ -317,7 +341,8 @@ const FoodDiary = () => {
                         <div className="col-span-2 text-center">Calories</div>
                         <div className="col-span-2 text-center">Protein</div>
                         <div className="col-span-2 text-center">Carbs</div>
-                        <div className="col-span-2 text-center">Fats</div>
+                        <div className="col-span-1 text-center">Fats</div>
+                        <div className="col-span-1 text-center">Action</div>
                       </div>
                       {mealItems.map((item, idx) => (
                         <div key={idx} className="grid grid-cols-12 gap-2 text-sm border-b py-2">
@@ -325,7 +350,16 @@ const FoodDiary = () => {
                           <div className="col-span-2 text-center">{Math.round(item.calories || 0)}</div>
                           <div className="col-span-2 text-center">{Math.round(item.protein || 0)} g</div>
                           <div className="col-span-2 text-center">{Math.round(item.carbs || 0)} g</div>
-                          <div className="col-span-2 text-center">{Math.round(item.fats || 0)} g</div>
+                          <div className="col-span-1 text-center">{Math.round(item.fats || 0)} g</div>
+                          <div className="col-span-1 text-center">
+                            <button
+                              onClick={() => handleDeleteFoodItem(item._id)}
+                              className="text-red-500 hover:text-red-700"
+                              title="Delete food item"
+                            >
+                              <FaTrash size={14} />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -169,8 +169,39 @@ exports.getDateRangeSummary = async (req, res) => {
       averageDailyCaloriesBurned: 0,
     }
 
-    // Calculate averages
+    // Calculate weekly goals based on user data
     const daysCount = Object.keys(dailySummaries).length
+    const weeklyCalorieGoal = 2000 * daysCount // Default 2000 calories per day
+    const weeklyExerciseGoal = 7 // Default 1 activity per day
+    const weeklyCalorieBurnGoal = 3500 // Default goal to burn 3500 calories per week (~ 1lb)
+
+    // Calculate progress percentages
+    const calorieGoalProgress = Math.min(
+      Math.round((totalSummary.totalCaloriesConsumed / weeklyCalorieGoal) * 100),
+      100,
+    )
+    const exerciseGoalProgress = Math.min(
+      Math.round(
+        ((totalSummary.totalWorkoutCalories + totalSummary.totalActivityCalories) / weeklyCalorieBurnGoal) * 100,
+      ),
+      100,
+    )
+    const activityGoalProgress = Math.min(
+      Math.round((Object.keys(dailySummaries).length / weeklyExerciseGoal) * 100),
+      100,
+    )
+
+    // Add weekly goals to the response
+    totalSummary.weeklyGoals = {
+      calorieGoal: weeklyCalorieGoal,
+      exerciseGoal: weeklyExerciseGoal,
+      calorieBurnGoal: weeklyCalorieBurnGoal,
+      calorieGoalProgress,
+      exerciseGoalProgress,
+      activityGoalProgress,
+    }
+
+    // Calculate averages
     if (daysCount > 0) {
       totalSummary.averageDailyCaloriesConsumed = Math.round(totalSummary.totalCaloriesConsumed / daysCount)
       totalSummary.averageDailyCaloriesBurned = Math.round(totalSummary.totalCaloriesBurned / daysCount)

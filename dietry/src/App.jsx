@@ -12,7 +12,6 @@ import Login from "./components/Login"
 import Private from "./components/Private"
 import { UserContext } from "./contexts/UserContext"
 import UserDetails from "./components/UserDetails"
-import AllergySelection from "./components/AllergySelection"
 import Home from "./components/Home"
 import MainLayout from "./components/layouts/MainLayout"
 import Dashboard from "./components/Dashboard/Dashboard"
@@ -60,17 +59,13 @@ function AppRoutes({ loggedUser }) {
     loggedUser.activityLevel &&
     loggedUser.goal
 
-  const hasAllergyInfo = loggedUser && loggedUser.hasAllergyInfo
-
   useEffect(() => {
     if (loggedUser) {
       if (!hasDetails && location.pathname !== "/details") {
         navigate("/details")
-      } else if (hasDetails && !hasAllergyInfo && location.pathname !== "/allergy-selection") {
-        navigate("/allergy-selection")
       }
     }
-  }, [loggedUser, hasDetails, hasAllergyInfo, location.pathname, navigate])
+  }, [loggedUser, hasDetails, location.pathname, navigate])
 
   // Check if the current route should display the main layout
   const mainLayoutRoutes = [
@@ -138,7 +133,6 @@ function AppRoutes({ loggedUser }) {
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
       <Route path="/details" element={<UserDetails />} />
-      <Route path="/allergy-selection" element={<AllergySelection />} />
       <Route path="/home" element={<Home />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

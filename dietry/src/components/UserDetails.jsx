@@ -45,11 +45,11 @@ export default function UserDetails() {
         toast.success(data.message || "Profile details updated successfully")
 
         let storedUser = JSON.parse(sessionStorage.getItem("diet-user"))
-        storedUser = { ...storedUser, ...userDetails, hasDetails: true }
+        storedUser = { ...storedUser, ...userDetails, hasDetails: true, hasAllergyInfo: true }
         sessionStorage.setItem("diet-user", JSON.stringify(storedUser))
         setLoggedUser(storedUser)
 
-        navigate("/allergy-selection")
+        navigate("/dashboard")
       })
       .catch((error) => {
         setIsLoading(false)

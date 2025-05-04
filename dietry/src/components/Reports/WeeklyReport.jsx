@@ -60,6 +60,7 @@ const WeeklyReport = () => {
       },
     },
     dailyCalories: [],
+    weeklyGoals: null,
   })
 
   // Initialize date range for current week
@@ -119,12 +120,18 @@ const WeeklyReport = () => {
       const endDateStr = dateRange.endDate.toISOString().split("T")[0]
 
       // Get calorie summary for the date range
-      const calorieSummaryRes = await axiosInstance.get("/calories/range", {
-        params: {
-          startDate: startDateStr,
-          endDate: endDateStr,
-        },
-      })
+      const [calorieSummaryRes, weeklyGoalsRes] = await Promise.all([
+        axiosInstance.get("/calories/range", {
+          params: {
+            startDate: startDateStr,
+            endDate: endDateStr,
+          },
+        }),
+        axiosInstance.get("/calories/weekly-goals"),
+      ])
+
+      // Get weekly goals
+      const weeklyGoals = weeklyGoalsRes.data
 
       // Fetch workout sessions
       const workoutResponse = await axiosInstance.get("/workout-sessions")
@@ -205,6 +212,7 @@ const WeeklyReport = () => {
         exerciseSummary,
         foodSummary,
         dailyCalories,
+        weeklyGoals, // Add the weekly goals to the report data
       })
     } catch (error) {
       console.error("Error fetching report data:", error)
@@ -457,13 +465,6 @@ const WeeklyReport = () => {
             <p className="text-gray-600">Total Activities</p>
           </div>
 
-          <div className="text-center mb-6 md:mb-0">
-            <div className="text-6xl font-bold text-[#28A745] mb-2">
-              {Math.round(reportData.exerciseSummary.totalDuration / 60)}
-            </div>
-            <p className="text-gray-600">Hours of Exercise</p>
-          </div>
-
           <div className="text-center">
             <div className="text-6xl font-bold text-[#28A745] mb-2">
               {Math.abs(reportData.caloriesSummary.net).toLocaleString()}
@@ -471,6 +472,68 @@ const WeeklyReport = () => {
             <p className="text-gray-600">
               {reportData.caloriesSummary.net <= 0 ? "Calorie Deficit" : "Calorie Surplus"}
             </p>
+          </div>
+        </div>
+
+        {/* Add weekly goal progress */}
+        <div className="mt-6 border-t border-gray-200 pt-6">
+          <h3 className="font-semibold text-gray-700 mb-3">Progress Toward Weekly Goals</h3>
+
+          {/* Calorie Goal Progress */}
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-medium text-gray-600">Weekly Calorie Goal</span>
+              <span className="text-sm font-medium">
+                {reportData.caloriesSummary.consumed.toLocaleString()} /{" "}
+                {(reportData.weeklyGoals?.weeklyCalorieGoal || 14000).toLocaleString()} kcal
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className="bg-orange-400 h-3 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min((reportData.caloriesSummary.consumed / (reportData.weeklyGoals?.weeklyCalorieGoal || 14000)) * 100, 100)}%`,
+                }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Exercise Goal Progress */}
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-medium text-gray-600">Weekly Exercise Goal</span>
+              <span className="text-sm font-medium">
+                {reportData.exerciseSummary.totalActivities} / {reportData.weeklyGoals?.weeklyExerciseGoal || 7}{" "}
+                activities
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className="bg-green-400 h-3 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min((reportData.exerciseSummary.totalActivities / (reportData.weeklyGoals?.weeklyExerciseGoal || 7)) * 100, 100)}%`,
+                }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Calorie Burn Goal Progress */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-medium text-gray-600">Weekly Calorie Burn Goal</span>
+              <span className="text-sm font-medium">
+                {reportData.caloriesSummary.burned.toLocaleString()} /{" "}
+                {(reportData.weeklyGoals?.weeklyCalorieBurnGoal || 3500).toLocaleString()} kcal
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className="bg-blue-400 h-3 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min((reportData.caloriesSummary.burned / (reportData.weeklyGoals?.weeklyCalorieBurnGoal || 3500)) * 100, 100)}%`,
+                }}
+              ></div>
+            </div>
           </div>
         </div>
       </div>

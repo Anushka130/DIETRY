@@ -13,14 +13,9 @@ import {
   FaBars,
   FaTimes,
   FaHeartbeat,
-  FaSearch,
   FaChevronDown,
   FaChevronRight,
   FaAppleAlt,
-  FaCoffee,
-  FaCarrot,
-  FaCookieBite,
-  FaGlassWhiskey,
   FaRegStickyNote,
 } from "react-icons/fa"
 
@@ -133,59 +128,6 @@ const MainLayout = ({ children }) => {
                       <span>Food Diary</span>
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      to="/food/breakfast"
-                      className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                        location.pathname === "/food/breakfast"
-                          ? "bg-[#E8F5E9] text-[#28A745]"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <FaCoffee className="mr-3 text-[#28A745] text-sm" />
-                      <span>Breakfast</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/food/lunch"
-                      className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                        location.pathname === "/food/lunch"
-                          ? "bg-[#E8F5E9] text-[#28A745]"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <FaUtensils className="mr-3 text-[#28A745] text-sm" />
-                      <span>Lunch</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/food/dinner"
-                      className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                        location.pathname === "/food/dinner"
-                          ? "bg-[#E8F5E9] text-[#28A745]"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <FaCarrot className="mr-3 text-[#28A745] text-sm" />
-                      <span>Dinner</span>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/food/snacks"
-                      className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                        location.pathname === "/food/snacks"
-                          ? "bg-[#E8F5E9] text-[#28A745]"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <FaCookieBite className="mr-3 text-[#28A745] text-sm" />
-                      <span>Snacks</span>
-                    </Link>
-                  </li>
-                  
                 </ul>
               )}
             </li>
@@ -243,16 +185,7 @@ const MainLayout = ({ children }) => {
             <FaBars className="h-6 w-6" />
           </button>
 
-          <div className="ml-4 md:ml-0 flex-1 flex items-center justify-between">
-            <div className="relative max-w-md w-full hidden md:block">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#28A745] focus:border-[#28A745]"
-              />
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            </div>
-
+          <div className="ml-4 md:ml-0 flex-1 flex items-center justify-end">
             {/* Logout Button in Header */}
             <button
               onClick={handleLogout}
